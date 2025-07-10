@@ -1,3 +1,5 @@
+// src/components/constants/network.js
+
 export const SUPPORTED_NETWORKS = [
   {
     id: "ethereum",
@@ -7,6 +9,7 @@ export const SUPPORTED_NETWORKS = [
     rpcUrl: "https://sepolia.infura.io/v3/20e963c9498b4830b513e2dc4b816284",
     explorer: "https://sepolia.etherscan.io",
     type: "evm",
+    isDefault: true, // ✅ MetaMask supported
   },
   {
     id: "bsc",
@@ -16,6 +19,7 @@ export const SUPPORTED_NETWORKS = [
     rpcUrl: "https://data-seed-prebsc-1-s1.binance.org:8545/",
     explorer: "https://testnet.bscscan.com",
     type: "evm",
+    isDefault: true, // ✅ MetaMask supported
   },
   {
     id: "polygon",
@@ -25,6 +29,7 @@ export const SUPPORTED_NETWORKS = [
     rpcUrl: "https://rpc-mumbai.maticvigil.com",
     explorer: "https://mumbai.polygonscan.com",
     type: "evm",
+    isDefault: false, // ❌ needs to be added manually
   },
   {
     id: "avalanche",
@@ -34,6 +39,7 @@ export const SUPPORTED_NETWORKS = [
     rpcUrl: "https://api.avax-test.network/ext/bc/C/rpc",
     explorer: "https://testnet.snowtrace.io",
     type: "evm",
+    isDefault: false,
   },
   {
     id: "fantom",
@@ -43,6 +49,7 @@ export const SUPPORTED_NETWORKS = [
     rpcUrl: "https://rpc.testnet.fantom.network/",
     explorer: "https://testnet.ftmscan.com",
     type: "evm",
+    isDefault: false,
   },
   {
     id: "arbitrum",
@@ -52,6 +59,7 @@ export const SUPPORTED_NETWORKS = [
     rpcUrl: "https://goerli-rollup.arbitrum.io/rpc",
     explorer: "https://goerli.arbiscan.io",
     type: "evm",
+    isDefault: false,
   },
   {
     id: "optimism",
@@ -61,6 +69,7 @@ export const SUPPORTED_NETWORKS = [
     rpcUrl: "https://goerli.optimism.io",
     explorer: "https://goerli-optimism.etherscan.io",
     type: "evm",
+    isDefault: false,
   },
   {
     id: "solana",

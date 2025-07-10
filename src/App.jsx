@@ -20,11 +20,18 @@ function WalletUI() {
   const walletAddress = state?.address || "0x0000..."
   const [activeTab, setActiveTab] = useState("Tokens");
 
+  const [isSendOpen, setIsSendOpen] = useState(false);
+
+   // ✅ If Send is open, render SendModal fullscreen
+  if (isSendOpen) {
+    return <SendModal onClose={() => setIsSendOpen(false)} />;
+  }
+
   return (
-    <div className="bg-gray-900 text-white min-h-screen max-w-md mx-auto">
+    <div className="bg-gray-900  text-white min-h-screen max-w-md  mx-auto">
       <Header address={walletAddress} />
       <Balance />
-      <ActionButtons />
+      <ActionButtons onSendClick={() => setIsSendOpen(true)} />
       <SolanaBanner />
       <div className="flex justify-center space-x-2 mb-6">
         <div className="w-2 h-2 bg-white rounded-full"></div>
@@ -54,17 +61,4 @@ export default function App() {
   );
 }
 
-// src/App.js
-// import React from "react";
-// import { BrowserRouter as Router } from "react-router-dom";
-// import AppRoutes from "./routes/AppRoutes";
-// import { Toaster } from "react-hot-toast";
 
-// export default function App() {
-//   return (
-//     <Router>
-//          <Toaster position="top-center" reverseOrder={false} />
-//       <AppRoutes />
-//     </Router>
-//   );
-// }
