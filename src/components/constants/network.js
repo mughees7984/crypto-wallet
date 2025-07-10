@@ -2,28 +2,79 @@ export const SUPPORTED_NETWORKS = [
   {
     id: "ethereum",
     name: "Ethereum (Sepolia)",
-    chainId: "0xaa36a7",
+    chainId: "0xaa36a7", // 11155111
     symbol: "ETH",
-    rpcUrl: "https://sepolia.infura.io/v3/20e963c9498b4830b513e2dc4b816284", // Replace with your key
+    rpcUrl: "https://sepolia.infura.io/v3/20e963c9498b4830b513e2dc4b816284",
     explorer: "https://sepolia.etherscan.io",
+    type: "evm",
   },
   {
     id: "bsc",
     name: "Binance Smart Chain (Testnet)",
-    chainId: "0x61",
+    chainId: "0x61", // 97
     symbol: "BNB",
     rpcUrl: "https://data-seed-prebsc-1-s1.binance.org:8545/",
     explorer: "https://testnet.bscscan.com",
+    type: "evm",
+  },
+  {
+    id: "polygon",
+    name: "Polygon (Mumbai Testnet)",
+    chainId: "0x13881", // 80001
+    symbol: "MATIC",
+    rpcUrl: "https://rpc-mumbai.maticvigil.com",
+    explorer: "https://mumbai.polygonscan.com",
+    type: "evm",
+  },
+  {
+    id: "avalanche",
+    name: "Avalanche (Fuji Testnet)",
+    chainId: "0xa869", // 43113
+    symbol: "AVAX",
+    rpcUrl: "https://api.avax-test.network/ext/bc/C/rpc",
+    explorer: "https://testnet.snowtrace.io",
+    type: "evm",
+  },
+  {
+    id: "fantom",
+    name: "Fantom (Testnet)",
+    chainId: "0xfa2", // 4002
+    symbol: "FTM",
+    rpcUrl: "https://rpc.testnet.fantom.network/",
+    explorer: "https://testnet.ftmscan.com",
+    type: "evm",
+  },
+  {
+    id: "arbitrum",
+    name: "Arbitrum (Goerli)",
+    chainId: "0x66eed", // 421613
+    symbol: "ETH",
+    rpcUrl: "https://goerli-rollup.arbitrum.io/rpc",
+    explorer: "https://goerli.arbiscan.io",
+    type: "evm",
+  },
+  {
+    id: "optimism",
+    name: "Optimism (Goerli)",
+    chainId: "0x1a4", // 420
+    symbol: "ETH",
+    rpcUrl: "https://goerli.optimism.io",
+    explorer: "https://goerli-optimism.etherscan.io",
+    type: "evm",
   },
   {
     id: "solana",
     name: "Solana (Devnet)",
-    cluster: "https://api.devnet.solana.com",
     symbol: "SOL",
+    cluster: "https://api.devnet.solana.com",
+    explorer: "https://explorer.solana.com?cluster=devnet",
+    type: "solana",
   },
   {
     id: "bitcoin",
     name: "Bitcoin (Testnet)",
     symbol: "tBTC",
+    type: "bitcoin",
+    explorer: "https://blockstream.info/testnet",
   },
 ];
