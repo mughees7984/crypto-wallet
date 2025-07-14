@@ -193,7 +193,8 @@ export default function CreateWallet() {
   };
 
   return (
-    <div className="bg-gray-900 text-white min-h-screen flex items-center justify-center px-4">
+   <div className="flex justify-center ">
+     <div className="bg-gray-900 text-white min-h-screen flex items-center justify-center px-4">
       <div className="bg-gray-800 p-6 rounded-lg shadow-md w-full max-w-md">
         {!walletInfo ? (
           <>
@@ -248,5 +249,6 @@ export default function CreateWallet() {
         )}
       </div>
     </div>
+   </div>
   );
 }
