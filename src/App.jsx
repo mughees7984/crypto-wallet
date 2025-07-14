@@ -1,6 +1,11 @@
 
 import React, { useState } from "react";
-import { BrowserRouter as Router, Routes, Route, useLocation } from "react-router-dom";
+import {
+  BrowserRouter as Router,
+  Routes,
+  Route,
+  useLocation,
+} from "react-router-dom";
 
 import Header from "./components/Header";
 import Balance from "./components/Balance";
@@ -14,6 +19,7 @@ import WalletSetup from "./components/WalletSetup";
 import CreateWallet from "./components/CreateWallet";
 import ImportWallet from "./pages/ImportWallet";
 import SendModal from "./components/Send/SendModal";
+import ReceiveModal from "./components/Receive/ReceiveModal";
 import ConfirmSend from "./components/Send/ConfirmSend";
 
 function WalletUI() {
@@ -21,16 +27,16 @@ function WalletUI() {
   const walletAddress = state?.address || "0x0000...";
   const [activeTab, setActiveTab] = useState("Tokens");
   const [isSendOpen, setIsSendOpen] = useState(false);
-
-  if (isSendOpen) {
-    return <SendModal onClose={() => setIsSendOpen(false)} />;
-  }
+  const [showReceiveModal, setShowReceiveModal] = useState(false);
 
   return (
-    <div className="bg-gray-900 text-white min-h-screen max-w-md mx-auto">
+    <div className="bg-gray-900 text-white min-h-screen max-w-md mx-auto relative">
       <Header address={walletAddress} />
       <Balance />
-      <ActionButtons onSendClick={() => setIsSendOpen(true)} />
+      <ActionButtons
+        onSendClick={() => setIsSendOpen(true)}
+        onReceiveClick={() => setShowReceiveModal(true)}
+      />
       <SolanaBanner />
       <div className="flex justify-center space-x-2 mb-6">
         <div className="w-2 h-2 bg-white rounded-full"></div>
@@ -43,6 +49,8 @@ function WalletUI() {
       {activeTab === "Tokens" && <TokenContent />}
       {activeTab === "NFTs" && <NFTsContent />}
       {activeTab === "Activity" && <ActivityContent />}
+
+      
     </div>
   );
 }

@@ -1,9 +1,13 @@
+
+
 import React, { useState } from "react";
 import { ArrowUpRight, ArrowLeftRight, Send, Download } from "lucide-react";
 import SendModal from "./Send/SendModal";
+import ReceiveModal from "./Receive/ReceiveModal";
 
 export default function ActionButtons({ onSendClick }) {
   const [showSend, setShowSend] = useState(false);
+  const [showReceive, setShowReceive] = useState(false);
   return (
     <div className="px-6 mb-6">
       <div className="flex justify-between">
@@ -28,6 +32,7 @@ export default function ActionButtons({ onSendClick }) {
           {
             icon: <Download className="w-5 h-5 text-gray-300" />,
             label: "Receive",
+            onClick: () => setShowReceive(true),
           },
         ].map((btn, idx) => (
           <button
@@ -44,6 +49,8 @@ export default function ActionButtons({ onSendClick }) {
       </div>
 
       { showSend && <SendModal onClose={()=>setShowSend(false)}/>}
+      { showReceive && <ReceiveModal onClose={()=>setShowReceive(false)}/> }
     </div>
   );
 }
+

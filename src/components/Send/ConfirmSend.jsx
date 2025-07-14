@@ -168,6 +168,7 @@ export default function ConfirmSend({ onBack, txData }) {
       setTimeout(() => {
         navigate("/wallet");
       }, 1500);
+      
     } catch (err) {
       console.error("Send Error:", err);
       setMessage(`❌ ${err.message}`);
