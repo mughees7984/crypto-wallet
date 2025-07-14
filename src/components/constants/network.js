@@ -7,7 +7,7 @@ export const SUPPORTED_NETWORKS = [
     chainId: "0xaa36a7", // 11155111
     symbol: "ETH",
     rpcUrl: "https://sepolia.infura.io/v3/20e963c9498b4830b513e2dc4b816284",
-    explorer: "https://sepolia.etherscan.io",
+    explorer: "https://sepolia.etherscan.io/address/",
     type: "evm",
     isDefault: true, // ✅ MetaMask supported
   },
@@ -17,9 +17,9 @@ export const SUPPORTED_NETWORKS = [
     chainId: "0x61", // 97
     symbol: "BNB",
     rpcUrl: "https://data-seed-prebsc-1-s1.binance.org:8545/",
-    explorer: "https://testnet.bscscan.com",
+    explorer: "https://testnet.bscscan.com/address/",
     type: "evm",
-    isDefault: true, // ✅ MetaMask supported
+    isDefault: true,
   },
   {
     id: "polygon",
@@ -27,9 +27,9 @@ export const SUPPORTED_NETWORKS = [
     chainId: "0x13881", // 80001
     symbol: "MATIC",
     rpcUrl: "https://rpc-mumbai.maticvigil.com",
-    explorer: "https://mumbai.polygonscan.com",
+    explorer: "https://mumbai.polygonscan.com/address/",
     type: "evm",
-    isDefault: false, // ❌ needs to be added manually
+    isDefault: false,
   },
   {
     id: "avalanche",
@@ -37,7 +37,7 @@ export const SUPPORTED_NETWORKS = [
     chainId: "0xa869", // 43113
     symbol: "AVAX",
     rpcUrl: "https://api.avax-test.network/ext/bc/C/rpc",
-    explorer: "https://testnet.snowtrace.io",
+    explorer: "https://testnet.snowtrace.io/address/",
     type: "evm",
     isDefault: false,
   },
@@ -47,7 +47,7 @@ export const SUPPORTED_NETWORKS = [
     chainId: "0xfa2", // 4002
     symbol: "FTM",
     rpcUrl: "https://rpc.testnet.fantom.network/",
-    explorer: "https://testnet.ftmscan.com",
+    explorer: "https://testnet.ftmscan.com/address/",
     type: "evm",
     isDefault: false,
   },
@@ -57,7 +57,7 @@ export const SUPPORTED_NETWORKS = [
     chainId: "0x66eed", // 421613
     symbol: "ETH",
     rpcUrl: "https://goerli-rollup.arbitrum.io/rpc",
-    explorer: "https://goerli.arbiscan.io",
+    explorer: "https://goerli.arbiscan.io/address/",
     type: "evm",
     isDefault: false,
   },
@@ -67,7 +67,7 @@ export const SUPPORTED_NETWORKS = [
     chainId: "0x1a4", // 420
     symbol: "ETH",
     rpcUrl: "https://goerli.optimism.io",
-    explorer: "https://goerli-optimism.etherscan.io",
+    explorer: "https://goerli-optimism.etherscan.io/address/",
     type: "evm",
     isDefault: false,
   },

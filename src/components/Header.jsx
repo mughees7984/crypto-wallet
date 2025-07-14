@@ -1,10 +1,27 @@
 import React, { useEffect, useRef, useState } from "react";
-import { ChevronDown, Copy, Menu, Pencil, Trash2, Check } from "lucide-react";
+import {
+  ChevronDown,
+  Copy,
+  Menu,
+  Pencil,
+  Trash2,
+  Check,
+  Bell,
+  User,
+  ExternalLink,
+  Shield,
+  Expand,
+  Puzzle,
+  HelpCircle,
+  Settings,
+  Lock,
+} from "lucide-react";
 import { LuGlobe } from "react-icons/lu";
-import { toast } from "react-hot-toast";
 import { useNetwork } from "../Context/NetworkContext";
 import { useWallet } from "../Context/WalletContext";
 import { SUPPORTED_NETWORKS } from "./constants/network";
+import { getAccountPath } from "ethers/lib/utils";
+import { getExplorerUrl } from "../utils/getExplorerUrl";
 
 export default function Header() {
   const [wallets, setWallets] = useState([]);
@@ -12,6 +29,7 @@ export default function Header() {
   const [editIndex, setEditIndex] = useState(null);
   const [editName, setEditName] = useState("");
   const [networkDropdownOpen, setNetworkDropdownOpen] = useState(false);
+  const [menuDropdownOpen, setMenuDropdownOpen] = useState(false);
   const [copied, setCopied] = useState(false);
 
   const { selectedWallet, switchWallet } = useWallet();
@@ -19,6 +37,8 @@ export default function Header() {
 
   const walletRef = useRef();
   const networkRef = useRef();
+  const menuRef = useRef();
+  const editInputRef = useRef(null);
 
   // Load wallets on mount
   useEffect(() => {
@@ -36,10 +56,20 @@ export default function Header() {
       if (networkRef.current && !networkRef.current.contains(e.target)) {
         setNetworkDropdownOpen(false);
       }
+      if (menuRef.current && !menuRef.current.contains(e.target)) {
+        setMenuDropdownOpen(false);
+      }
     };
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
+
+  // Focus on edit input when editing a wallet name
+  useEffect(() => {
+    if (editIndex !== null && editInputRef.current) {
+      editInputRef.current.focus();
+    }
+  }, [editIndex]);
 
   const truncated = selectedWallet?.address
     ? `${selectedWallet.address.slice(0, 6)}...${selectedWallet.address.slice(
@@ -86,6 +116,65 @@ export default function Header() {
       }
     }
   };
+
+  const menuItems = [
+    {
+      icon: Bell,
+      label: "Notifications",
+      badge: "New!",
+      onClick: () => console.log("Notifications clicked"),
+    },
+    {
+      icon: User,
+      label: "Account details",
+      onClick: () => console.log("Account details clicked"),
+    },
+    {
+      icon: ExternalLink,
+      label: "View on explorer",
+      subtitle: selectedNetwork?.explorer
+        ? new URL(selectedNetwork.explorer).hostname
+        : "",
+      onClick: () => {
+        console.log("selectedNetwork", selectedNetwork);
+        console.log("selectedWallet", selectedWallet);
+        const url = getExplorerUrl(selectedNetwork, selectedWallet?.address);
+        console.log("Explorer URL:", url);
+        window.open(url, "_blank");
+      },
+    },
+
+    {
+      icon: Shield,
+      label: "All permissions",
+      onClick: () => console.log("All permissions clicked"),
+    },
+    {
+      icon: Expand,
+      label: "Expand view",
+      onClick: () => console.log("Expand view clicked"),
+    },
+    {
+      icon: Puzzle,
+      label: "Snaps",
+      onClick: () => console.log("Snaps clicked"),
+    },
+    {
+      icon: HelpCircle,
+      label: "Support",
+      onClick: () => console.log("Support clicked"),
+    },
+    {
+      icon: Settings,
+      label: "Settings",
+      onClick: () => console.log("Settings clicked"),
+    },
+    {
+      icon: Lock,
+      label: "Lock MetaMask",
+      onClick: () => console.log("Lock MetaMask clicked"),
+    },
+  ];
 
   return (
     <div className="flex items-center justify-between p-4 border-b border-gray-800 relative">
@@ -142,8 +231,14 @@ export default function Header() {
                 {editIndex === index ? (
                   <div className="flex items-center space-x-2 w-full">
                     <input
+                      ref={editInputRef}
                       value={editName}
                       onChange={(e) => setEditName(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") {
+                          handleRename(index);
+                        }
+                      }}
                       className="bg-gray-700 rounded px-2 py-1 text-sm w-full"
                     />
                     <Check
@@ -209,7 +304,44 @@ export default function Header() {
             Connected to {selectedWallet?.name || "Account"}
           </div>
         </div>
-        <Menu className="w-5 h-5 text-gray-400" />
+
+        <div className="relative" ref={menuRef}>
+          <Menu
+            className="w-5 h-5 text-gray-400 cursor-pointer hover:text-gray-300"
+            onClick={() => setMenuDropdownOpen(!menuDropdownOpen)}
+          />
+          {menuDropdownOpen && (
+            <div className="absolute right-0 top-8 bg-gray-800 border border-gray-700 rounded-lg shadow-xl z-50 w-64 py-2">
+              {menuItems.map((item, index) => (
+                <div
+                  key={index}
+                  className="px-4 py-3 hover:bg-gray-700 cursor-pointer transition-colors duration-150 flex items-center space-x-3"
+                  onClick={() => {
+                    item.onClick();
+                    setMenuDropdownOpen(false);
+                  }}
+                >
+                  <item.icon className="w-4 h-4 text-gray-400" />
+                  <div className="flex-1">
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm text-white">{item.label}</span>
+                      {item.badge && (
+                        <span className="bg-blue-600 text-white text-xs px-2 py-1 rounded-full">
+                          {item.badge}
+                        </span>
+                      )}
+                    </div>
+                    {item.subtitle && (
+                      <div className="text-xs text-gray-400 mt-1">
+                        {item.subtitle}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
