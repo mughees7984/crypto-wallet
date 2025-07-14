@@ -1,15 +1,17 @@
-
-
 import React, { useState, useEffect } from "react";
 import { ChevronLeft, ChevronDown, QrCode } from "lucide-react";
 import ConfirmSend from "./ConfirmSend";
+import { useNetwork } from "../../Context/NetworkContext";
+import { ethers } from "ethers";
 
 export default function SendModal({ onClose }) {
+  const { selectedNetwork } = useNetwork();
   const [selectedTab, setSelectedTab] = useState("Your accounts");
   const [recipientAddress, setRecipientAddress] = useState("");
   const [amount, setAmount] = useState("");
   const [connectedAccount, setConnectedAccount] = useState(null);
   const [allAccounts, setAllAccounts] = useState([]);
+  const [balances, setBalances] = useState({});
   const [showConfirm, setShowConfirm] = useState(false);
   const [txData, setTxData] = useState(null);
 
@@ -19,6 +21,29 @@ export default function SendModal({ onClose }) {
     setConnectedAccount(storedWallet);
     setAllAccounts(storedWallets);
   }, []);
+
+  useEffect(() => {
+    const fetchBalances = async () => {
+      if (!selectedNetwork?.rpcUrl) return;
+
+      const provider = new ethers.providers.JsonRpcProvider(selectedNetwork.rpcUrl);
+      const updatedBalances = {};
+
+      for (const account of allAccounts) {
+        try {
+          const rawBalance = await provider.getBalance(account.address);
+          updatedBalances[account.address] = ethers.utils.formatEther(rawBalance);
+        } catch (error) {
+          console.error("Balance fetch error for", account.address, error);
+          updatedBalances[account.address] = "0.00";
+        }
+      }
+
+      setBalances(updatedBalances);
+    };
+
+    fetchBalances();
+  }, [allAccounts, selectedNetwork]);
 
   const handleContinue = () => {
     if (!recipientAddress || !amount) return;
@@ -66,7 +91,7 @@ export default function SendModal({ onClose }) {
           </div>
         </div>
 
-        {/* To */}
+        {/* To Section */}
         <div className="p-4 space-y-4">
           <div>
             <label className="text-sm font-medium text-gray-300 mb-2 block">To</label>
@@ -115,27 +140,31 @@ export default function SendModal({ onClose }) {
 
         {/* Account List */}
         <div className="px-4 space-y-3 pb-20">
-          {allAccounts.map((account, index) => (
-            <div
-              key={index}
-              className={`flex items-center justify-between p-3 ${
-                account.address === connectedAccount?.address
-                  ? "bg-gray-800 border-l-4 border-blue-500"
-                  : "hover:bg-gray-800"
-              } rounded-lg`}
-            >
-              <div className="flex items-center space-x-3">
-                <div className="w-10 h-10 bg-orange-500 rounded-full" />
-                <div>
-                  <div className="font-medium text-white">{account.name}</div>
-                  <div className="text-sm text-gray-400">
-                    {account.address.slice(0, 6)}...{account.address.slice(-4)}
+          {allAccounts.map((account, index) => {
+            const shortAddress = `${account.address.slice(0, 6)}...${account.address.slice(-4)}`;
+            const balance = balances[account.address] || "Loading...";
+            return (
+              <div
+                key={index}
+                className={`flex items-center justify-between p-3 ${
+                  account.address === connectedAccount?.address
+                    ? "bg-gray-800 border-l-4 border-blue-500"
+                    : "hover:bg-gray-800"
+                } rounded-lg`}
+              >
+                <div className="flex items-center space-x-3">
+                  <div className="w-10 h-10 bg-orange-500 rounded-full" />
+                  <div>
+                    <div className="font-medium text-white">{account.name}</div>
+                    <div className="text-sm text-gray-400">{shortAddress}</div>
                   </div>
                 </div>
+                <div className="text-right">
+                  <div className="text-white font-medium">{balance} {selectedNetwork.symbol}</div>
+                </div>
               </div>
-              <div className="text-white text-sm">$0.00 USD</div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </div>
 
@@ -157,3 +186,4 @@ export default function SendModal({ onClose }) {
     </div>
   );
 }
+

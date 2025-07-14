@@ -4,12 +4,15 @@ import "./index.css";
 import App from "./App.jsx";
 import { NetworkProvider } from "./Context/NetworkContext.jsx";
 import { WalletProvider } from "./Context/WalletContext.jsx";
+import { TransactionProvider } from "./Context/TransactionContext.jsx";
 
 createRoot(document.getElementById("root")).render(
   <StrictMode>
     <NetworkProvider>
       <WalletProvider>
-        <App />
+        <TransactionProvider>
+          <App />
+        </TransactionProvider>
       </WalletProvider>
     </NetworkProvider>
   </StrictMode>
