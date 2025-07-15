@@ -32,7 +32,7 @@ export default function Header() {
   const [menuDropdownOpen, setMenuDropdownOpen] = useState(false);
   const [copied, setCopied] = useState(false);
 
-  const { selectedWallet, switchWallet } = useWallet();
+  const { selectedWallet, switchWallet, isLocked, lockWallet } = useWallet();
   const { selectedNetwork, setSelectedNetwork } = useNetwork();
 
   const walletRef = useRef();
@@ -172,7 +172,7 @@ export default function Header() {
     {
       icon: Lock,
       label: "Lock MetaMask",
-      onClick: () => console.log("Lock MetaMask clicked"),
+      onClick: () => lockWallet(),
     },
   ];
 
@@ -346,3 +346,5 @@ export default function Header() {
     </div>
   );
 }
+
+

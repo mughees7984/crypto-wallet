@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import {
   BrowserRouter as Router,
@@ -49,8 +48,6 @@ function WalletUI() {
       {activeTab === "Tokens" && <TokenContent />}
       {activeTab === "NFTs" && <NFTsContent />}
       {activeTab === "Activity" && <ActivityContent />}
-
-      
     </div>
   );
 }
@@ -68,3 +65,5 @@ export default function App() {
     </Router>
   );
 }
+
+

@@ -7,6 +7,7 @@ export const WalletProvider = ({ children }) => {
     const stored = localStorage.getItem("wallet");
     return stored ? JSON.parse(stored) : null;
   });
+  const [isLocked, setIsLocked] = useState(false);
 
   //  Sync with localStorage on mount
   useEffect(() => {
@@ -22,8 +23,26 @@ export const WalletProvider = ({ children }) => {
     setSelectedWallet(wallet);
   };
 
+  const lockWallet = () => {
+    setSelectedWallet(null);
+    setIsLocked(true);
+  };
+
+  const unlockWallet = (passwordInput) => {
+    const storedWallets = JSON.parse(localStorage.getItem("wallets")) || [];
+    const storedWallet = JSON.parse(localStorage.getItem("wallet"));
+    const storedPassword = localStorage.getItem("walletPassword");
+
+    if (passwordInput === storedPassword) {
+      setSelectedWallet(storedWallet);
+      setIsLocked(false);
+      return true;
+    }
+    return false;
+  };
+
   return (
-    <WalletContext.Provider value={{ selectedWallet, switchWallet }}>
+    <WalletContext.Provider value={{ selectedWallet, switchWallet, lockWallet, unlockWallet, isLocked }}>
       {children}
     </WalletContext.Provider>
   );
