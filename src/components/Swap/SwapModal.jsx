@@ -1,19 +1,33 @@
 import React, { useState, useRef, useEffect } from "react";
 import { ChevronDown, ArrowLeft, ArrowDown, Settings } from "lucide-react";
+import { ethers } from "ethers";
+import {
+  Token,
+  CurrencyAmount,
+  TradeType,
+  Percent,
+} from "@uniswap/sdk-core";
+import {
+  Pool,
+  Route,
+  Trade,
+  SwapRouter,
+} from "@uniswap/v3-sdk";
+import { getSignerFromLocalStorage } from "../../utils/getSignerFromLocalStorage";
+import IUniswapV3PoolABI from "../../abis/IUniswapV3Pool.json"; // ✅ generated earlier
+import { TOKENS } from "../../utils/tokenList"; // ✅ WETH and USDC as Token instances
 
-const TOKENS = [
-  { symbol: "ETH", name: "Ethereum", balance: "0" },
-  { symbol: "USDC", name: "USD Coin", balance: "0" },
-  { symbol: "USDT", name: "Tether", balance: "0" },
-  { symbol: "DAI", name: "Dai Stablecoin", balance: "0" },
-];
+const FEE = 3000; // 0.3%
+const POOL_ADDRESS = "0x9799b5edc1aa7d3fad350309b08df3f64914e244"; // your pool
 
 export default function SwapModal({ onClose }) {
-  const [fromToken, setFromToken] = useState(TOKENS[0]);
-  const [toToken, setToToken] = useState(TOKENS[1]);
+  const [fromToken, setFromToken] = useState(TOKENS.WETH);
+  const [toToken, setToToken] = useState(TOKENS.USDC);
+  const [amount, setAmount] = useState("");
+  const [isSwapping, setIsSwapping] = useState(false);
   const [fromDropdownOpen, setFromDropdownOpen] = useState(false);
   const [toDropdownOpen, setToDropdownOpen] = useState(false);
-  const [amount, setAmount] = useState("");
+
   const fromRef = useRef();
   const toRef = useRef();
 
@@ -26,15 +40,12 @@ export default function SwapModal({ onClose }) {
         setToDropdownOpen(false);
       }
     };
-
     const handleKeyDown = (e) => {
-      if (e.key === "Escape") {
-        onClose();
-      }
+      if (e.key === "Escape") onClose();
     };
-    document.addEventListener("keydown", handleKeyDown);
-    document.addEventListener("mousedown", handleClickOutside);
 
+    document.addEventListener("mousedown", handleClickOutside);
+    document.addEventListener("keydown", handleKeyDown);
     return () => {
       document.removeEventListener("mousedown", handleClickOutside);
       document.removeEventListener("keydown", handleKeyDown);
@@ -46,20 +57,89 @@ export default function SwapModal({ onClose }) {
     setToToken(fromToken);
   };
 
+  const handleSwap = async () => {
+    try {
+      setIsSwapping(true);
+
+      const signer = getSignerFromLocalStorage();
+      const provider = signer.provider;
+
+      const poolContract = new ethers.Contract(
+        POOL_ADDRESS,
+        IUniswapV3PoolABI,
+        provider
+      );
+      const [slot0, liquidity] = await Promise.all([
+        poolContract.slot0(),
+        poolContract.liquidity(),
+      ]);
+
+      const pool = new Pool(
+        fromToken,
+        toToken,
+        FEE,
+        slot0.sqrtPriceX96.toString(),
+        liquidity.toString(),
+        slot0.tick
+      );
+
+      const route = new Route([pool], fromToken, toToken);
+      const amountIn = ethers.utils.parseUnits(amount, fromToken.decimals);
+      const currencyAmountIn = CurrencyAmount.fromRawAmount(
+        fromToken,
+        amountIn.toString()
+      );
+
+      // Dummy output to satisfy SDK (doesn't affect transaction execution)
+      const dummyOut = CurrencyAmount.fromRawAmount(toToken, "1");
+
+      const uncheckedTrade = Trade.createUncheckedTrade({
+        route,
+        inputAmount: currencyAmountIn,
+        outputAmount: dummyOut,
+        tradeType: TradeType.EXACT_INPUT,
+      });
+
+      const options = {
+        slippageTolerance: new Percent(50, 10_000), // 0.5%
+        recipient: await signer.getAddress(),
+        deadline: Math.floor(Date.now() / 1000) + 60 * 10, // 10 minutes
+      };
+
+      const methodParameters = SwapRouter.swapCallParameters(
+        [uncheckedTrade],
+        options
+      );
+
+      const tx = {
+        to: "0xE592427A0AEce92De3Edee1F18E0157C05861564", // Uniswap V3 Router
+        data: methodParameters.calldata,
+        value: methodParameters.value,
+      };
+
+      const receipt = await signer.sendTransaction(tx);
+      console.log("✅ Swap TX Hash:", receipt.hash);
+      alert("✅ Swap transaction submitted!");
+    } catch (err) {
+      console.error("❌ Swap Error:", err);
+      alert("❌ Swap failed. Check console.");
+    } finally {
+      setIsSwapping(false);
+    }
+  };
+
   return (
     <div className="fixed inset-0 flex items-center justify-center z-50">
       <div className="bg-gray-900 text-white rounded-xl w-96 p-6 relative shadow-xl">
-        {/* Back Button */}
         <button
-          className="absolute top-3 left-3 pb-3 text-gray-400 hover:text-white"
+          className="absolute top-3 left-3 text-gray-400 hover:text-white"
           onClick={onClose}
         >
           <ArrowLeft size={22} />
         </button>
-        {/* Header */}
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-lg font-bold mt-3">Swap</h2>
-          <Settings className="w-5 h-5 text-gray-400 cursor-pointer" />
+          <Settings className="w-5 h-5 text-gray-400" />
         </div>
 
         {/* From Token */}
@@ -67,14 +147,14 @@ export default function SwapModal({ onClose }) {
           <div className="relative" ref={fromRef}>
             <button
               className="flex items-center space-x-2 bg-gray-800 px-3 py-1 rounded-lg"
-              onClick={() => setFromDropdownOpen((open) => !open)}
+              onClick={() => setFromDropdownOpen(!fromDropdownOpen)}
             >
               <span className="font-semibold">{fromToken.symbol}</span>
               <ChevronDown className="w-4 h-4 text-gray-400" />
             </button>
             {fromDropdownOpen && (
               <div className="absolute top-10 left-0 bg-gray-900 border border-gray-700 rounded-xl shadow-lg z-50 w-36 py-2">
-                {TOKENS.map((token, idx) => (
+                {Object.values(TOKENS).map((token, idx) => (
                   <div
                     key={idx}
                     className="px-3 py-2 hover:bg-gray-700 cursor-pointer"
@@ -99,8 +179,9 @@ export default function SwapModal({ onClose }) {
             className="bg-gray-800 rounded-lg px-2 py-1 w-24 text-right text-white outline-none ml-2"
           />
         </div>
+
         <div className="text-xs text-gray-400 mb-2">
-          Balance: <span className="font-mono">{fromToken.balance}</span>
+          Balance: <span className="font-mono">-</span>
         </div>
 
         {/* Swap Arrow */}
@@ -119,14 +200,14 @@ export default function SwapModal({ onClose }) {
           <div className="relative" ref={toRef}>
             <button
               className="flex items-center space-x-2 bg-gray-800 px-3 py-1 rounded-lg"
-              onClick={() => setToDropdownOpen((open) => !open)}
+              onClick={() => setToDropdownOpen(!toDropdownOpen)}
             >
               <span className="font-semibold">{toToken.symbol}</span>
               <ChevronDown className="w-4 h-4 text-gray-400" />
             </button>
             {toDropdownOpen && (
               <div className="absolute top-10 left-0 bg-gray-900 border border-gray-700 rounded-xl shadow-lg z-50 w-36 py-2">
-                {TOKENS.map((token, idx) => (
+                {Object.values(TOKENS).map((token, idx) => (
                   <div
                     key={idx}
                     className="px-3 py-2 hover:bg-gray-700 cursor-pointer"
@@ -147,17 +228,19 @@ export default function SwapModal({ onClose }) {
           </span>
         </div>
 
-        {/* Swap Button */}
-        <button
-          className={`w-full py-2 rounded-lg font-semibold mt-4 transition ${
-            amount && parseFloat(amount) > 0
-              ? "bg-blue-600 hover:bg-blue-700 text-white"
-              : "bg-gray-700 text-gray-400 cursor-not-allowed"
-          }`}
-          disabled={!amount || parseFloat(amount) <= 0}
-        >
-          {amount && parseFloat(amount) > 0 ? "Swap" : "Enter an amount"}
-        </button>
+        <div className="mt-4">
+          <button
+            className={`w-full py-2 rounded-lg font-semibold mt-4 transition ${
+              amount && parseFloat(amount) > 0
+                ? "bg-blue-600 hover:bg-blue-700 text-white"
+                : "bg-gray-700 text-gray-400 cursor-not-allowed"
+            }`}
+            disabled={!amount || parseFloat(amount) <= 0 || isSwapping}
+            onClick={handleSwap}
+          >
+            {isSwapping ? "Swapping..." : "Swap"}
+          </button>
+        </div>
       </div>
     </div>
   );
