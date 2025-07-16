@@ -14,11 +14,13 @@ import {
   SwapRouter,
 } from "@uniswap/v3-sdk";
 import { getSignerFromLocalStorage } from "../../utils/getSignerFromLocalStorage";
-import IUniswapV3PoolABI from "../../abis/IUniswapV3Pool.json"; // ✅ generated earlier
-import { TOKENS } from "../../utils/tokenList"; // ✅ WETH and USDC as Token instances
+import IUniswapV3PoolABI from "../../abis/IUniswapV3Pool.json";
+import { TOKENS } from "../../utils/tokenList";
+import { toast } from "react-hot-toast";
+import { useTransactions } from "../../Context/TransactionContext";
 
-const FEE = 3000; // 0.3%
-const POOL_ADDRESS = "0x9799b5edc1aa7d3fad350309b08df3f64914e244"; // your pool
+const FEE = 3000;
+const POOL_ADDRESS = "0x9799b5edc1aa7d3fad350309b08df3f64914e244"; // Replace with your actual pool address
 
 export default function SwapModal({ onClose }) {
   const [fromToken, setFromToken] = useState(TOKENS.WETH);
@@ -30,6 +32,7 @@ export default function SwapModal({ onClose }) {
 
   const fromRef = useRef();
   const toRef = useRef();
+  const { addTransaction } = useTransactions();
 
   useEffect(() => {
     const handleClickOutside = (e) => {
@@ -60,7 +63,6 @@ export default function SwapModal({ onClose }) {
   const handleSwap = async () => {
     try {
       setIsSwapping(true);
-
       const signer = getSignerFromLocalStorage();
       const provider = signer.provider;
 
@@ -90,7 +92,7 @@ export default function SwapModal({ onClose }) {
         amountIn.toString()
       );
 
-      // Dummy output to satisfy SDK (doesn't affect transaction execution)
+      // Dummy output to satisfy SDK
       const dummyOut = CurrencyAmount.fromRawAmount(toToken, "1");
 
       const uncheckedTrade = Trade.createUncheckedTrade({
@@ -101,9 +103,9 @@ export default function SwapModal({ onClose }) {
       });
 
       const options = {
-        slippageTolerance: new Percent(50, 10_000), // 0.5%
+        slippageTolerance: new Percent(50, 10_000),
         recipient: await signer.getAddress(),
-        deadline: Math.floor(Date.now() / 1000) + 60 * 10, // 10 minutes
+        deadline: Math.floor(Date.now() / 1000) + 60 * 10,
       };
 
       const methodParameters = SwapRouter.swapCallParameters(
@@ -112,17 +114,27 @@ export default function SwapModal({ onClose }) {
       );
 
       const tx = {
-        to: "0xE592427A0AEce92De3Edee1F18E0157C05861564", // Uniswap V3 Router
+        to: "0xE592427A0AEce92De3Edee1F18E0157C05861564", // Uniswap v3 router
         data: methodParameters.calldata,
         value: methodParameters.value,
       };
 
       const receipt = await signer.sendTransaction(tx);
-      console.log("✅ Swap TX Hash:", receipt.hash);
-      alert("✅ Swap transaction submitted!");
+
+      toast.success("Swap Successful! View in Activity Tab.");
+
+      // ✅ Log to Activity tab
+      addTransaction({
+        type: "Swap",
+        amount,
+        symbol: fromToken.symbol,
+        status: "Success",
+        date: new Date().toLocaleString(),
+        hash: receipt.hash,
+      });
     } catch (err) {
       console.error("❌ Swap Error:", err);
-      alert("❌ Swap failed. Check console.");
+      toast.error("Swap failed. See console.");
     } finally {
       setIsSwapping(false);
     }

@@ -1,44 +1,4 @@
-// import React, {useState, useEffect} from "react";
 
-// export default function ActivityContent() {
-//   const [transactions, setTransactions] = useState([]);
-
-//   useEffect(() => {
-//     const stored = localStorage.getItem("transactions");
-//     if (stored) {
-//       setTransactions(JSON.parse(stored));
-//     }
-//   }, []);
-
-//   return (
-//      <div className="px-4 pb-6">
-//       <div className="text-sm text-gray-400 mb-2">Sepolia ▼</div>
-//       {transactions.length === 0 ? (
-//         <div className="text-gray-500 text-sm mt-4">No recent activity.</div>
-//       ) : (
-//         transactions
-//           .sort((a, b) => new Date(b.date) - new Date(a.date))
-//           .map((tx, index) => (
-//             <div key={index} className="flex items-start py-3 border-b border-gray-800">
-//               <div className="w-10 h-10 bg-gray-800 rounded-full flex items-center justify-center mr-4">
-//                 <div className="text-purple-400 text-xl">↗</div>
-//               </div>
-//               <div className="flex-1">
-//                 <div className="flex justify-between items-center">
-//                   <span className="text-white font-medium">Send</span>
-//                   <span className="text-right text-red-400 font-medium">
-//                     -{tx.amount} {tx.symbol}
-//                   </span>
-//                 </div>
-//                 <div className="text-green-500 text-sm">Confirmed</div>
-//                 <div className="text-gray-400 text-sm">{tx.date}</div>
-//               </div>
-//             </div>
-//           ))
-//       )}
-//     </div>
-//   );
-// }
 
 
 import React from "react";

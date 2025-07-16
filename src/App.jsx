@@ -5,6 +5,7 @@ import {
   Route,
   useLocation,
 } from "react-router-dom";
+import { Toaster } from "react-hot-toast";
 
 import Header from "./components/Header";
 import Balance from "./components/Balance";
@@ -55,6 +56,7 @@ function WalletUI() {
 export default function App() {
   return (
     <Router>
+      <Toaster position="top-center" reverseOrder={false} />
       <Routes>
         <Route path="/" element={<WalletSetup />} />
         <Route path="/create-wallet" element={<CreateWallet />} />
