@@ -1,4 +1,5 @@
 
+
 // import React, { useEffect, useState } from "react";
 // import { Eye, EyeOff, RefreshCcw } from "lucide-react";
 // import { useNetwork } from "../Context/NetworkContext";
@@ -7,15 +8,13 @@
 
 // export default function Balance() {
 //   const { selectedNetwork } = useNetwork();
+//   const { selectedWallet } = useWallet();
+
 //   const [showBalance, setShowBalance] = useState(true);
 //   const [balance, setBalance] = useState(null);
 //   const [usdValue, setUsdValue] = useState(null);
 //   const [loading, setLoading] = useState(false);
 //   const [lastUpdated, setLastUpdated] = useState(null);
-
-//   // const selectedWallet = JSON.parse(localStorage.getItem("wallet"));
-//   const { selectedWallet } = useWallet();
-
 
 //   const fetchBalance = async () => {
 //     if (
@@ -36,12 +35,9 @@
 //         const ethBalance = ethers.utils.formatEther(rawBalance);
 //         setBalance(parseFloat(ethBalance).toFixed(4));
 
-//         // Dummy USD conversion — replace with real API if needed
-//         const dummyPrice = 1800;
+//         const dummyPrice = 1800; // Replace with CoinGecko API if needed
 //         setUsdValue(`$${(ethBalance * dummyPrice).toFixed(2)}`);
 //       }
-
-//       // Add Solana / Bitcoin support here if needed
 
 //       setLastUpdated(new Date().toLocaleTimeString());
 //     } catch (err) {
@@ -51,10 +47,8 @@
 //     }
 //   };
 
-//   // Fetch on mount, network change, or wallet change
 //   useEffect(() => {
 //     fetchBalance();
-   
 //   }, [selectedNetwork, selectedWallet]);
 
 //   const toggleBalance = () => {
@@ -102,56 +96,16 @@
 // }
 
 
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import { Eye, EyeOff, RefreshCcw } from "lucide-react";
+import { useBalance } from "../Context/BalanceContext";
 import { useNetwork } from "../Context/NetworkContext";
-import { useWallet } from "../Context/WalletContext";
-import { ethers } from "ethers";
 
 export default function Balance() {
+  const { balance, usdValue, loading, lastUpdated, fetchBalance } = useBalance();
   const { selectedNetwork } = useNetwork();
-  const { selectedWallet } = useWallet();
 
   const [showBalance, setShowBalance] = useState(true);
-  const [balance, setBalance] = useState(null);
-  const [usdValue, setUsdValue] = useState(null);
-  const [loading, setLoading] = useState(false);
-  const [lastUpdated, setLastUpdated] = useState(null);
-
-  const fetchBalance = async () => {
-    if (
-      !selectedWallet ||
-      !selectedWallet.address ||
-      !selectedNetwork?.rpcUrl
-    )
-      return;
-
-    try {
-      setLoading(true);
-
-      if (selectedNetwork.type === "evm") {
-        const provider = new ethers.providers.JsonRpcProvider(
-          selectedNetwork.rpcUrl
-        );
-        const rawBalance = await provider.getBalance(selectedWallet.address);
-        const ethBalance = ethers.utils.formatEther(rawBalance);
-        setBalance(parseFloat(ethBalance).toFixed(4));
-
-        const dummyPrice = 1800; // Replace with CoinGecko API if needed
-        setUsdValue(`$${(ethBalance * dummyPrice).toFixed(2)}`);
-      }
-
-      setLastUpdated(new Date().toLocaleTimeString());
-    } catch (err) {
-      console.error("Error fetching balance:", err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchBalance();
-  }, [selectedNetwork, selectedWallet]);
 
   const toggleBalance = () => {
     const newVal = !showBalance;
