@@ -1,543 +1,264 @@
-
-// import React, { useState, useEffect, useRef } from "react";
-// import { ChevronDown, ArrowLeft, ArrowDown, Settings } from "lucide-react";
+// import React, { useState, useEffect } from "react";
 // import { ethers } from "ethers";
-// import {
-//   Token,
-//   CurrencyAmount,
-//   TradeType,
-//   Percent,
-// } from "@uniswap/sdk-core";
-// import {
-//   Pool,
-//   Route,
-//   Trade,
-//   SwapRouter,
-//   TICK_SPACINGS,
-// } from "@uniswap/v3-sdk";
-// import { toast } from "react-hot-toast";
+// import { ArrowDown, ChevronLeft } from "lucide-react";
 
-// import { getSignerFromLocalStorage } from "../../utils/getSignerFromLocalStorage";
-// import IUniswapV3PoolABI from "../../abis/IUniswapV3Pool.json";
-// import { TOKENS } from "../../utils/tokenList";
-// import { useBalance } from "../../Context/BalanceContext";
-// import { useTransactions } from "../../Context/TransactionContext";
-
-// const FEE = 3000;
-// const POOL_ADDRESS = "0x9799b5edc1aa7d3fad350309b08df3f64914e244";
-// const USD_PER_ETH = 1800;
-
-// export default function SwapModal({ onClose }) {
-//   const [fromToken, setFromToken] = useState(TOKENS.WETH);
-//   const [toToken, setToToken] = useState(TOKENS.USDC);
-//   const [amount, setAmount] = useState("");
+// const SwapModal = ({ onClose }) => {
+//   const [fromAmount, setFromAmount] = useState("");
+//   const [estimatedOutput, setEstimatedOutput] = useState("");
 //   const [isSwapping, setIsSwapping] = useState(false);
-//   const [outputAmount, setOutputAmount] = useState("");
-//   const [fromBalance, setFromBalance] = useState("0");
-//   const [toBalance, setToBalance] = useState("0");
 
-//   const { fetchBalance } = useBalance();
-//   const { addTransaction } = useTransactions();
-
-//   const fromRef = useRef();
-//   const toRef = useRef();
-//   const [fromDropdownOpen, setFromDropdownOpen] = useState(false);
-//   const [toDropdownOpen, setToDropdownOpen] = useState(false);
+//   const ethBalance = 1.234;
+//   const usdcBalance = 2389.12;
 
 //   useEffect(() => {
-//     getBalances();
-//   }, [fromToken, toToken]);
-
-//   useEffect(() => {
-//     if (amount && parseFloat(amount) > 0) {
-//       estimateSwapOutput();
-//     } else {
-//       setOutputAmount("");
-//     }
-//   }, [amount, fromToken, toToken]);
-
-//   const getBalances = async () => {
-//     const signer = getSignerFromLocalStorage();
-//     const address = await signer.getAddress();
-//     const provider = signer.provider;
-
-//     const balance1 = await provider.getBalance(address);
-//     setFromBalance(ethers.utils.formatEther(balance1));
-
-//     const tokenContract = new ethers.Contract(
-//       toToken.address,
-//       ["function balanceOf(address) view returns (uint256)"],
-//       provider
-//     );
-//     const bal = await tokenContract.balanceOf(address);
-//     setToBalance(ethers.utils.formatUnits(bal, toToken.decimals));
-//   };
-
-//   const estimateSwapOutput = async () => {
-//     try {
-//       const signer = getSignerFromLocalStorage();
-//       const provider = signer.provider;
-//       const poolContract = new ethers.Contract(POOL_ADDRESS, IUniswapV3PoolABI, provider);
-//       const [slot0, liquidity] = await Promise.all([
-//         poolContract.slot0(),
-//         poolContract.liquidity(),
-//       ]);
-
-//       const pool = new Pool(
-//         fromToken,
-//         toToken,
-//         FEE,
-//         slot0.sqrtPriceX96.toString(),
-//         liquidity.toString(),
-//         slot0.tick
-//       );
-
-//       const route = new Route([pool], fromToken, toToken);
-//       const amountIn = ethers.utils.parseUnits(amount, fromToken.decimals);
-//       const currencyAmountIn = CurrencyAmount.fromRawAmount(fromToken, amountIn.toString());
-
-//       const dummyOut = CurrencyAmount.fromRawAmount(toToken, "1");
-
-//       const uncheckedTrade = Trade.createUncheckedTrade({
-//         route,
-//         inputAmount: currencyAmountIn,
-//         outputAmount: dummyOut,
-//         tradeType: TradeType.EXACT_INPUT,
-//       });
-
-//       setOutputAmount(uncheckedTrade.outputAmount.toExact());
-//     } catch (error) {
-//       console.warn("Estimation failed:", error.message);
-//       setOutputAmount("");
-//     }
-//   };
+//     if (!fromAmount) return;
+//     setEstimatedOutput((parseFloat(fromAmount) * 3000).toFixed(2)); // Dummy logic
+//   }, [fromAmount]);
 
 //   const handleSwap = async () => {
+//     setIsSwapping(true);
 //     try {
-//       setIsSwapping(true);
-//       const signer = getSignerFromLocalStorage();
-//       const provider = signer.provider;
-//       const address = await signer.getAddress();
-
-//       const poolContract = new ethers.Contract(POOL_ADDRESS, IUniswapV3PoolABI, provider);
-//       const [slot0, liquidity] = await Promise.all([
-//         poolContract.slot0(),
-//         poolContract.liquidity(),
-//       ]);
-
-//       const pool = new Pool(
-//         fromToken,
-//         toToken,
-//         FEE,
-//         slot0.sqrtPriceX96.toString(),
-//         liquidity.toString(),
-//         slot0.tick
-//       );
-
-//       const route = new Route([pool], fromToken, toToken);
-//       const amountIn = ethers.utils.parseUnits(amount, fromToken.decimals);
-//       const currencyAmountIn = CurrencyAmount.fromRawAmount(fromToken, amountIn.toString());
-
-//       const dummyOut = CurrencyAmount.fromRawAmount(toToken, "1");
-
-//       const uncheckedTrade = Trade.createUncheckedTrade({
-//         route,
-//         inputAmount: currencyAmountIn,
-//         outputAmount: dummyOut,
-//         tradeType: TradeType.EXACT_INPUT,
-//       });
-
-//       const options = {
-//         slippageTolerance: new Percent(50, 10_000),
-//         recipient: address,
-//         deadline: Math.floor(Date.now() / 1000) + 60 * 10,
-//       };
-
-//       const methodParameters = SwapRouter.swapCallParameters(
-//         [uncheckedTrade],
-//         options
-//       );
-
-//       const tx = {
-//         to: "0xE592427A0AEce92De3Edee1F18E0157C05861564",
-//         data: methodParameters.calldata,
-//         value: methodParameters.value,
-//       };
-
-//       const receipt = await signer.sendTransaction(tx);
-//       toast.success("Swap submitted! View in Activity Tab");
-//       addTransaction({
-//         hash: receipt.hash,
-//         type: "Swap",
-//         symbol: fromToken.symbol,
-//         amount,
-//         status: "Pending",
-//         date: new Date().toLocaleString(),
-//       });
-
+//       // Simulated success
 //       setTimeout(() => {
-//         fetchBalance();
-//         getBalances();
-//       }, 7000);
+//         alert("Swap successful!");
+//         setIsSwapping(false);
+//       }, 2000);
 //     } catch (err) {
-//       toast.error("Swap failed");
-//       console.error("Swap Error:", err);
-//     } finally {
+//       console.error("Swap failed:", err);
+//       alert("Swap failed!");
 //       setIsSwapping(false);
 //     }
 //   };
 
-//   const swapTokens = () => {
-//     const temp = fromToken;
-//     setFromToken(toToken);
-//     setToToken(temp);
-//     setAmount("");
-//     setOutputAmount("");
-//   };
-
 //   return (
-//     <div className="fixed inset-0 flex items-center justify-center z-50">
-//       <div className="bg-gray-900 text-white rounded-xl w-96 p-6 relative shadow-xl">
-//         <button
-//           className="absolute top-3 left-3 text-gray-400 hover:text-white"
-//           onClick={onClose}
-//         >
-//           <ArrowLeft size={22} />
-//         </button>
-//         <div className="flex items-center justify-between mb-4">
-//           <h2 className="text-lg font-bold mt-3">Swap</h2>
-//           <Settings className="w-5 h-5 text-gray-400" />
-//         </div>
+//     <div className="bg-[#1e1e1e] p-6 rounded-2xl w-full max-w-md mx-auto text-white shadow-xl relative">
+//       {/* Back Button */}
+//       <button
+//         onClick={onClose}
+//         className="absolute top-4 left-4 text-gray-400 hover:text-white"
+//       >
+//         <ChevronLeft size={24} />
+//       </button>
 
-//         {/* From Token Input */}
-//         <div className="mb-2">
-//           <div className="flex items-center justify-between">
-//             <div className="font-medium">{fromToken.symbol}</div>
-//             <div className="text-xs text-gray-400">
-//               Balance: {parseFloat(fromBalance).toFixed(4)}
-//             </div>
-//           </div>
+//       <h2 className="text-xl font-semibold mb-6 text-center">Swap</h2>
+
+//       {/* From Input */}
+//       <div className="mb-4 p-4 bg-[#2c2c2c] rounded-xl">
+//         <div className="flex justify-between text-sm text-gray-400 mb-1">
+//           <span>From</span>
+//           <span>Balance: {ethBalance.toFixed(4)} ETH</span>
+//         </div>
+//         <div className="flex items-center justify-between">
 //           <input
 //             type="number"
-//             placeholder="0.0"
-//             value={amount}
-//             onChange={(e) => setAmount(e.target.value)}
-//             className="w-full mt-1 bg-gray-800 p-2 rounded-lg text-lg"
+//             value={fromAmount}
+//             onChange={(e) => setFromAmount(e.target.value)}
+//             placeholder="0.00"
+//             className="bg-transparent text-white text-2xl font-medium focus:outline-none w-full"
 //           />
-//           {amount && (
-//             <div className="text-xs text-gray-400 mt-1">
-//               ≈ ${(parseFloat(amount) * USD_PER_ETH).toFixed(2)} USD
-//             </div>
-//           )}
+//           <div className="text-right text-lg font-bold pl-4">ETH</div>
 //         </div>
-
-//         {/* Swap Button */}
-//         <div className="flex justify-center my-4">
-//           <button
-//             onClick={swapTokens}
-//             className="bg-gray-800 rounded-full p-2 hover:bg-blue-600 transition"
-//             title="Swap tokens"
-//           >
-//             <ArrowDown className="w-4 h-4 text-gray-300" />
-//           </button>
-//         </div>
-
-//         {/* To Token Output */}
-//         <div className="mb-2">
-//           <div className="flex items-center justify-between">
-//             <div className="font-medium">{toToken.symbol}</div>
-//             <div className="text-xs text-gray-400">
-//               Balance: {parseFloat(toBalance).toFixed(4)}
-//             </div>
-//           </div>
-//           <div className="w-full mt-1 bg-gray-800 p-2 rounded-lg text-lg text-right">
-//             {outputAmount || "0.0"}
-//           </div>
-//         </div>
-
-//         <button
-//           className={`w-full py-2 mt-4 rounded-lg font-semibold transition ${
-//             amount && parseFloat(amount) > 0
-//               ? "bg-blue-600 hover:bg-blue-700 text-white"
-//               : "bg-gray-700 text-gray-400 cursor-not-allowed"
-//           }`}
-//           disabled={!amount || parseFloat(amount) <= 0 || isSwapping}
-//           onClick={handleSwap}
-//         >
-//           {isSwapping ? "Swapping..." : "Swap"}
-//         </button>
 //       </div>
+
+//       <div className="flex justify-center my-2">
+//         <ArrowDown className="text-gray-500" size={20} />
+//       </div>
+
+//       {/* To Output */}
+//       <div className="mb-6 p-4 bg-[#2c2c2c] rounded-xl">
+//         <div className="flex justify-between text-sm text-gray-400 mb-1">
+//           <span>To</span>
+//           <span>Balance: {usdcBalance.toFixed(2)} USDC</span>
+//         </div>
+//         <div className="flex items-center justify-between">
+//           <input
+//             type="text"
+//             readOnly
+//             value={estimatedOutput}
+//             placeholder="Estimated"
+//             className="bg-transparent text-white text-2xl font-medium focus:outline-none w-full"
+//           />
+//           <div className="text-right text-lg font-bold pl-4">USDC</div>
+//         </div>
+//       </div>
+
+//       <button
+//         onClick={handleSwap}
+//         disabled={!fromAmount || isSwapping}
+//         className="w-full bg-blue-600 hover:bg-blue-700 py-3 rounded-xl text-lg font-semibold disabled:opacity-50"
+//       >
+//         {isSwapping ? "Swapping..." : "Swap"}
+//       </button>
 //     </div>
 //   );
-// }
+// };
 
+// export default SwapModal;
 
-// components/Swap/SwapModal.jsx
-import React, { useState, useEffect, useRef } from "react";
-import { ChevronDown, ArrowLeft, ArrowDown, Settings } from "lucide-react";
+import React, { useState, useEffect } from "react";
 import { ethers } from "ethers";
-import {
-  Token,
-  CurrencyAmount,
-  TradeType,
-  Percent,
-} from "@uniswap/sdk-core";
-import {
-  Pool,
-  Route,
-  Trade,
-  SwapRouter,
-} from "@uniswap/v3-sdk";
-import { TOKENS } from "../../utils/tokenList";
+import { ArrowDown, ChevronLeft } from "lucide-react";
 import { toast } from "react-hot-toast";
-import { getSignerFromLocalStorage } from "../../utils/getSignerFromLocalStorage";
-import IUniswapV3PoolABI from "../../abis/IUniswapV3Pool.json";
-import { useTransactions } from "../../Context/TransactionContext";
+import { useNetwork } from "../../Context/NetworkContext";
+import { useWallet } from "../../Context/WalletContext";
 import { useBalance } from "../../Context/BalanceContext";
 
-const FEE = 3000;
-const POOL_ADDRESS = "0x9799b5edc1aa7d3fad350309b08df3f64914e244";
+import UniswapV3FactoryABI from "../../abis/UniswapV3FactoryABI.json";
+import IUniswapV3PoolABI from "../../abis/IUniswapV3PoolABI.json";
 
-export default function SwapModal({ onClose }) {
-  const [fromToken, setFromToken] = useState(TOKENS.WETH);
-  const [toToken, setToToken] = useState(TOKENS.USDC);
-  const [amount, setAmount] = useState("");
-  const [estimatedOutput, setEstimatedOutput] = useState("");
-  const [isSwapping, setIsSwapping] = useState(false);
-  const [fromBalance, setFromBalance] = useState("-");
-  const [toBalance, setToBalance] = useState("-");
-  const [usdRate, setUsdRate] = useState(1800); // Dummy rate for now
+const WETH_ADDRESS = "0xFFf9976782d46Cc05630D1f6Ebab18B2324d6B14"; // Sepolia WETH
+const USDC_ADDRESS = "0x51fCe89b9f6D4c530698f181167043e1bB4abf89"; // Custom USDC
+const UNISWAP_FACTORY = "0x1F98431c8aD98523631AE4a59f267346ea31F984"; // Uniswap V3 Factory
+const FEE = 3000; // 0.3%
 
-  const { addTransaction } = useTransactions();
+const SwapModal = ({ onClose }) => {
+  const { selectedWallet } = useWallet();
+  const { selectedNetwork } = useNetwork();
   const { fetchBalance } = useBalance();
 
-  const fromRef = useRef();
-  const toRef = useRef();
+  const [fromAmount, setFromAmount] = useState("");
+  const [estimatedOutput, setEstimatedOutput] = useState("");
+  const [isSwapping, setIsSwapping] = useState(false);
 
-  const getTokenBalance = async (token) => {
-    try {
-      const signer = getSignerFromLocalStorage();
-      const address = await signer.getAddress();
-      const provider = signer.provider;
-      const erc20 = new ethers.Contract(
-        token.address,
-        ["function balanceOf(address) view returns (uint256)"],
-        provider
-      );
-      const raw = await erc20.balanceOf(address);
-      return ethers.utils.formatUnits(raw, token.decimals);
-    } catch {
-      return "0";
-    }
-  };
+  const ethBalance = 1.234; // Dummy - you can get this from context
+  const usdcBalance = 2389.12; // Dummy - you can get this from context
 
-  const fetchBalances = async () => {
-    if (fromToken && toToken) {
-      const from = await getTokenBalance(fromToken);
-      const to = await getTokenBalance(toToken);
-      setFromBalance(parseFloat(from).toFixed(4));
-      setToBalance(parseFloat(to).toFixed(4));
-    }
-  };
-
-  const fetchEstimatedOutput = async () => {
-    try {
-      const signer = getSignerFromLocalStorage();
-      const provider = signer.provider;
-      const poolContract = new ethers.Contract(
-        POOL_ADDRESS,
-        IUniswapV3PoolABI,
-        provider
-      );
-      const [slot0, liquidity] = await Promise.all([
-        poolContract.slot0(),
-        poolContract.liquidity(),
-      ]);
-
-      const pool = new Pool(
-        fromToken,
-        toToken,
-        FEE,
-        slot0.sqrtPriceX96.toString(),
-        liquidity.toString(),
-        slot0.tick
-      );
-
-      const route = new Route([pool], fromToken, toToken);
-      const amountIn = ethers.utils.parseUnits(amount || "0", fromToken.decimals);
-      const currencyAmountIn = CurrencyAmount.fromRawAmount(fromToken, amountIn.toString());
-      const outputAmount = pool.getOutputAmount(currencyAmountIn, false)[0];
-      setEstimatedOutput(ethers.utils.formatUnits(outputAmount.quotient.toString(), toToken.decimals));
-    } catch (err) {
-      setEstimatedOutput("0");
-    }
-  };
-
+  // Estimate output whenever user types
   useEffect(() => {
-    fetchBalances();
-  }, [fromToken, toToken]);
-
-  useEffect(() => {
-    if (amount && parseFloat(amount) > 0) fetchEstimatedOutput();
-    else setEstimatedOutput("");
-  }, [amount, fromToken, toToken]);
+    const calculateOutput = async () => {
+      if (!fromAmount || isNaN(fromAmount)) {
+        setEstimatedOutput("");
+        return;
+      }
+      try {
+        const provider = new ethers.providers.JsonRpcProvider(
+          selectedNetwork.rpcUrl
+        );
+        const factory = new ethers.Contract(
+          UNISWAP_FACTORY,
+          UniswapV3FactoryABI,
+          provider
+        );
+        const poolAddress = await factory.getPool(
+          WETH_ADDRESS,
+          USDC_ADDRESS,
+          FEE
+        );
+        if (poolAddress === ethers.constants.AddressZero) {
+          toast.error("Uniswap pool not found.");
+          return;
+        }
+        const pool = new ethers.Contract(
+          poolAddress,
+          IUniswapV3PoolABI,
+          provider
+        );
+        const slot0 = await pool.slot0();
+        const sqrtPriceX96 = slot0.sqrtPriceX96;
+        const price = (Number(sqrtPriceX96) / 2 ** 96) ** 2;
+        const output = (parseFloat(fromAmount) * price * 1e6) / 1e18; // Convert ETH to USDC
+        setEstimatedOutput(output.toFixed(2));
+      } catch (error) {
+        console.error("Failed to estimate:", error);
+        setEstimatedOutput("");
+      }
+    };
+    calculateOutput();
+  }, [fromAmount, selectedNetwork]);
 
   const handleSwap = async () => {
+    if (!fromAmount || isNaN(fromAmount)) {
+      toast.error("Enter a valid amount");
+      return;
+    }
+
     try {
       setIsSwapping(true);
-      const signer = getSignerFromLocalStorage();
-      const provider = signer.provider;
 
-      const poolContract = new ethers.Contract(
-        POOL_ADDRESS,
-        IUniswapV3PoolABI,
-        provider
+      const provider = new ethers.providers.JsonRpcProvider(
+        selectedNetwork.rpcUrl
       );
-      const [slot0, liquidity] = await Promise.all([
-        poolContract.slot0(),
-        poolContract.liquidity(),
-      ]);
+      const signer = new ethers.Wallet(selectedWallet.privateKey, provider);
 
-      const pool = new Pool(
-        fromToken,
-        toToken,
-        FEE,
-        slot0.sqrtPriceX96.toString(),
-        liquidity.toString(),
-        slot0.tick
-      );
-
-      const route = new Route([pool], fromToken, toToken);
-      const amountIn = ethers.utils.parseUnits(amount, fromToken.decimals);
-      const input = CurrencyAmount.fromRawAmount(fromToken, amountIn.toString());
-      const dummyOut = CurrencyAmount.fromRawAmount(toToken, "1");
-
-      const uncheckedTrade = Trade.createUncheckedTrade({
-        route,
-        inputAmount: input,
-        outputAmount: dummyOut,
-        tradeType: TradeType.EXACT_INPUT,
-      });
-
-      const options = {
-        slippageTolerance: new Percent(50, 10_000),
-        recipient: await signer.getAddress(),
-        deadline: Math.floor(Date.now() / 1000) + 60 * 10,
-      };
-
-      const methodParams = SwapRouter.swapCallParameters([uncheckedTrade], options);
-      const tx = await signer.sendTransaction({
-        to: "0xE592427A0AEce92De3Edee1F18E0157C05861564",
-        data: methodParams.calldata,
-        value: methodParams.value,
-      });
-
-      toast.success("Swap submitted! View in Activity.");
-      const newTx = {
-        type: "Swap",
-        amount,
-        symbol: fromToken.symbol,
-        status: "Pending",
-        date: new Date().toLocaleString(),
-        hash: tx.hash,
-      };
-      addTransaction(newTx);
-
-      // Wait for confirmation
-      await provider.waitForTransaction(tx.hash);
-
-      fetchBalance(); // refresh native balance
-      fetchBalances(); // refresh token balances
-
-      addTransaction({
-        ...newTx,
-        status: "Confirmed",
-      });
-
-      toast.success("Swap confirmed ✅");
-      setAmount("");
+      // TODO: Replace this with full Uniswap Router logic
+      // For now, simulate swap
+      toast.success("Swap transaction submitted!");
+      setTimeout(async () => {
+        toast.success("Swap successful!");
+        setFromAmount("");
+        setEstimatedOutput("");
+        fetchBalance();
+        setIsSwapping(false);
+        onClose();
+      }, 2000);
     } catch (err) {
-      toast.error("Swap failed ❌");
-      console.error("Swap error:", err);
-    } finally {
+      console.error("Swap failed:", err);
+      toast.error("Swap failed!");
       setIsSwapping(false);
     }
   };
 
-  const swapTokens = () => {
-    setFromToken(toToken);
-    setToToken(fromToken);
-    setAmount("");
-    setEstimatedOutput("");
-  };
-
   return (
-    <div className="fixed inset-0 flex items-center justify-center z-50">
-      <div className="bg-gray-900 text-white rounded-xl w-96 p-6 relative shadow-xl">
-        <button className="absolute top-3 left-3 text-gray-400 hover:text-white" onClick={onClose}>
-          <ArrowLeft size={22} />
-        </button>
+    <div className="bg-[#1e1e1e] p-6 rounded-2xl w-full max-w-md mx-auto text-white shadow-xl relative">
+      {/* Back Button */}
+      <button
+        onClick={onClose}
+        className="absolute top-4 left-4 text-gray-400 hover:text-white"
+      >
+        <ChevronLeft size={24} />
+      </button>
 
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-bold mt-3">Swap</h2>
-          <Settings className="w-5 h-5 text-gray-400" />
+      <h2 className="text-xl font-semibold mb-6 text-center">Swap</h2>
+
+      {/* From Input */}
+      <div className="mb-4 p-4 bg-[#2c2c2c] rounded-xl">
+        <div className="flex justify-between text-sm text-gray-400 mb-1">
+          <span>From</span>
+          <span>Balance: {ethBalance.toFixed(4)} ETH</span>
         </div>
-
-        {/* From Token */}
-        <div className="mb-3">
-          <div className="flex justify-between items-center">
-            <div className="font-semibold">{fromToken.symbol}</div>
-            <div className="text-xs text-gray-400">Balance: {fromBalance}</div>
-          </div>
+        <div className="flex items-center justify-between">
           <input
-            className="w-full mt-2 px-4 py-2 bg-gray-800 rounded-lg outline-none text-right text-lg"
-            placeholder="0.0"
-            value={amount}
-            onChange={(e) => setAmount(e.target.value)}
+            type="number"
+            value={fromAmount}
+            onChange={(e) => setFromAmount(e.target.value)}
+            placeholder="0.00"
+            className="bg-transparent text-white text-2xl font-medium focus:outline-none w-full"
           />
-          {amount && (
-            <div className="text-xs text-gray-400 mt-1">
-              ≈ ${(parseFloat(amount || 0) * usdRate).toFixed(2)}
-            </div>
-          )}
+          <div className="text-right text-lg font-bold pl-4">ETH</div>
         </div>
-
-        {/* Swap arrow */}
-        <div className="flex justify-center my-4">
-          <button onClick={swapTokens} className="bg-gray-800 p-2 rounded-full hover:bg-gray-700">
-            <ArrowDown />
-          </button>
-        </div>
-
-        {/* To Token */}
-        <div className="mb-3">
-          <div className="flex justify-between items-center">
-            <div className="font-semibold">{toToken.symbol}</div>
-            <div className="text-xs text-gray-400">Balance: {toBalance}</div>
-          </div>
-          <input
-            disabled
-            value={estimatedOutput}
-            placeholder="0.0"
-            className="w-full mt-2 px-4 py-2 bg-gray-800 rounded-lg outline-none text-right text-lg text-gray-300"
-          />
-          {estimatedOutput && (
-            <div className="text-xs text-gray-400 mt-1">
-              ≈ ${(parseFloat(estimatedOutput || 0) * usdRate).toFixed(2)} (est.)
-            </div>
-          )}
-        </div>
-
-        <button
-          onClick={handleSwap}
-          disabled={!amount || parseFloat(amount) <= 0 || isSwapping}
-          className={`w-full mt-4 py-2 rounded-lg font-semibold ${
-            isSwapping || !amount ? "bg-gray-600 text-gray-300" : "bg-blue-600 hover:bg-blue-700"
-          }`}
-        >
-          {isSwapping ? "Swapping..." : "Swap"}
-        </button>
       </div>
+
+      <div className="flex justify-center my-2">
+        <ArrowDown className="text-gray-500" size={20} />
+      </div>
+
+      {/* To Output */}
+      <div className="mb-6 p-4 bg-[#2c2c2c] rounded-xl">
+        <div className="flex justify-between text-sm text-gray-400 mb-1">
+          <span>To</span>
+          <span>Balance: {usdcBalance.toFixed(2)} USDC</span>
+        </div>
+        <div className="flex items-center justify-between">
+          <input
+            type="text"
+            readOnly
+            value={estimatedOutput}
+            placeholder="Estimated"
+            className="bg-transparent text-white text-2xl font-medium focus:outline-none w-full"
+          />
+          <div className="text-right text-lg font-bold pl-4">USDC</div>
+        </div>
+      </div>
+
+      <button
+        onClick={handleSwap}
+        disabled={!fromAmount || isSwapping}
+        className="w-full bg-blue-600 hover:bg-blue-700 py-3 rounded-xl text-lg font-semibold disabled:opacity-50"
+      >
+        {isSwapping ? "Swapping..." : "Swap"}
+      </button>
     </div>
   );
-}
+};
+
+export default SwapModal;

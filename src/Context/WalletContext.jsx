@@ -1,6 +1,6 @@
 import { createContext, useContext, useState, useEffect } from "react";
 
-const WalletContext = createContext();
+export const WalletContext = createContext();
 
 export const WalletProvider = ({ children }) => {
   const [selectedWallet, setSelectedWallet] = useState(() => {

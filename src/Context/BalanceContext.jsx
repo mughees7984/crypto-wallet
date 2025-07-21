@@ -1,11 +1,18 @@
-// // Context/BalanceContext.jsx
-// import React, { createContext, useContext, useState, useEffect } from "react";
+// import React, {
+//   createContext,
+//   useContext,
+//   useState,
+//   useEffect,
+//   useCallback,
+// } from "react";
 // import { ethers } from "ethers";
 // import { useNetwork } from "./NetworkContext";
 // import { useWallet } from "./WalletContext";
 
-// const BalanceContext = createContext();
+// // 🔷 Context creation
+// export const BalanceContext = createContext();
 
+// // 🔷 Provider component
 // export const BalanceProvider = ({ children }) => {
 //   const { selectedNetwork } = useNetwork();
 //   const { selectedWallet } = useWallet();
@@ -15,46 +22,58 @@
 //   const [lastUpdated, setLastUpdated] = useState(null);
 //   const [loading, setLoading] = useState(false);
 
-//   const fetchBalance = async () => {
+//   // ✅ Memoized balance fetch function
+//   const fetchBalance = useCallback(async () => {
 //     if (!selectedWallet?.address || !selectedNetwork?.rpcUrl) return;
 
 //     try {
 //       setLoading(true);
 
 //       if (selectedNetwork.type === "evm") {
-//         const provider = new ethers.providers.JsonRpcProvider(selectedNetwork.rpcUrl);
+//         const provider = new ethers.providers.JsonRpcProvider(
+//           selectedNetwork.rpcUrl
+//         );
 //         const rawBalance = await provider.getBalance(selectedWallet.address);
-//         const ethBalance = ethers.utils.formatEther(rawBalance);
-//         setBalance(parseFloat(ethBalance).toFixed(4));
+//         const eth = ethers.utils.formatEther(rawBalance);
+//         setBalance(parseFloat(eth).toFixed(4));
 
-//         // You can replace this dummy price with live data from CoinGecko later
+//         // Replace this with live CoinGecko integration later
 //         const dummyPrice = 1800;
-//         setUsdValue(`$${(ethBalance * dummyPrice).toFixed(2)}`);
+//         setUsdValue(`$${(eth * dummyPrice).toFixed(2)}`);
 //       }
 
 //       setLastUpdated(new Date().toLocaleTimeString());
 //     } catch (error) {
-//       console.error("Error fetching balance:", error);
+//       console.error("❌ Error fetching balance:", error);
 //     } finally {
 //       setLoading(false);
 //     }
-//   };
+//   }, [selectedWallet, selectedNetwork]);
 
+//   // 🔄 Fetch on mount + when wallet/network changes
 //   useEffect(() => {
 //     fetchBalance();
-//   }, [selectedNetwork, selectedWallet]);
+//   }, [fetchBalance]);
 
 //   return (
-//     <BalanceContext.Provider value={{ balance, usdValue, loading, lastUpdated, fetchBalance }}>
+//     <BalanceContext.Provider
+//       value={{
+//         balance,
+//         usdValue,
+//         lastUpdated,
+//         loading,
+//         fetchBalance, // ✅ Exposed for SwapModal or Header
+//       }}
+//     >
 //       {children}
 //     </BalanceContext.Provider>
 //   );
 // };
 
+// // 🔷 Hook for easier access
 // export const useBalance = () => useContext(BalanceContext);
 
 
-// Context/BalanceContext.jsx
 import React, {
   createContext,
   useContext,
@@ -67,7 +86,7 @@ import { useNetwork } from "./NetworkContext";
 import { useWallet } from "./WalletContext";
 
 // 🔷 Context creation
-const BalanceContext = createContext();
+export const BalanceContext = createContext();
 
 // 🔷 Provider component
 export const BalanceProvider = ({ children }) => {
@@ -79,7 +98,7 @@ export const BalanceProvider = ({ children }) => {
   const [lastUpdated, setLastUpdated] = useState(null);
   const [loading, setLoading] = useState(false);
 
-  // ✅ Memoized balance fetch function
+  // ✅ Memoized balance fetch function (supports native only for now)
   const fetchBalance = useCallback(async () => {
     if (!selectedWallet?.address || !selectedNetwork?.rpcUrl) return;
 
@@ -91,10 +110,10 @@ export const BalanceProvider = ({ children }) => {
           selectedNetwork.rpcUrl
         );
         const rawBalance = await provider.getBalance(selectedWallet.address);
-        const eth = ethers.utils.formatEther(rawBalance);
-        setBalance(parseFloat(eth).toFixed(4));
+        const eth = parseFloat(ethers.utils.formatEther(rawBalance));
+        setBalance(eth.toFixed(4));
 
-        // Replace this with live CoinGecko integration later
+        // Replace this with live price in future
         const dummyPrice = 1800;
         setUsdValue(`$${(eth * dummyPrice).toFixed(2)}`);
       }
@@ -107,7 +126,7 @@ export const BalanceProvider = ({ children }) => {
     }
   }, [selectedWallet, selectedNetwork]);
 
-  // 🔄 Fetch on mount + when wallet/network changes
+  // 🔄 Auto-fetch on wallet or network change
   useEffect(() => {
     fetchBalance();
   }, [fetchBalance]);
@@ -119,7 +138,7 @@ export const BalanceProvider = ({ children }) => {
         usdValue,
         lastUpdated,
         loading,
-        fetchBalance, // ✅ Exposed for SwapModal or Header
+        fetchBalance,
       }}
     >
       {children}
