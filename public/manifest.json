@@ -1,25 +1,25 @@
 {
+  "name": "My Wallet Extension",
+  "version": "1.0",
   "manifest_version": 3,
-  "name": "My React Wallet",
-  "version": "1.0.0",
-  "description": "A MetaMask-style crypto wallet built with React.",
   "action": {
-    "default_popup": "index.html",
-    "default_icon": {
-      "16": "icon16.png",
-      "48": "icon48.png",
-      "128": "icon128.png"
-    }
+    "default_popup": "index.html"
   },
-  "permissions": [
-    "storage"
+  "permissions": ["scripting", "storage"],
+  "background": {
+    "service_worker": "assets/background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["assets/contentScript.js"],
+      "run_at": "document_start"
+    }
   ],
-  "host_permissions": [
-    "<all_urls>"
-  ],
-  "icons": {
-    "16": "icon16.png",
-    "48": "icon48.png",
-    "128": "icon128.png"
-  }
+  "web_accessible_resources": [
+    {
+      "resources": ["assets/injectedProvider.js"],
+      "matches": ["<all_urls>"]
+    }
+  ]
 }

@@ -21,7 +21,7 @@ import ConfirmSend from "./components/Send/ConfirmSend";
 export default function App() {
   return (
     <>
-      <div className="w-[360px] bg-gray-900 text-white min-h-screen overflow-y-auto">
+      <div className=" w-[400px] bg-gray-900 text-white min-h-screen overflow-y-auto">
         <Toaster position="top-center" reverseOrder={false} />
         <AppRoutes />
       </div>
