@@ -1,60 +1,39 @@
-// // src/injectedProvider.js
-
-// (function () {
-//   if (window.ethereum) return; // avoid double-injecting
-
-//   // Simple example provider following EIP-1193
-//   window.ethereum = {
-//     isMyWallet: true,
-//     isConnected: () => true,
-//     request: async ({ method, params }) => {
-//       return new Promise((resolve, reject) => {
-//         window.postMessage(
-//           {
-//             target: "my-wallet-extension",
-//             type: "REQUEST",
-//             method,
-//             params,
-//           },
-//           "*"
-//         );
-
-//         const handler = (event) => {
-//           if (
-//             event.source !== window ||
-//             !event.data ||
-//             event.data.target !== "my-wallet-page" ||
-//             event.data.method !== method
-//           )
-//             return;
-
-//           window.removeEventListener("message", handler);
-//           if (event.data.error) reject(event.data.error);
-//           else resolve(event.data.result);
-//         };
-
-//         window.addEventListener("message", handler);
-//       });
-//     },
-//   };
-
-//   // Emit event to notify dapps
-//   window.dispatchEvent(new Event("ethereum#initialized"));
-// })();
-
-
 class MyEthereumProvider {
   constructor() {
     this.selectedAddress = "0x7507fab3607ACF236D1D826c9373A2DC6151CE89";
-    // this.selectedAddress = "0x7192e466f0748E2EbA164c13b8D54d24Ac8af2f4";
+    this.chainId = "0xaa36a7"; // Sepolia
   }
 
   request({ method, params }) {
-    if (method === "eth_requestAccounts") {
-      return Promise.resolve([this.selectedAddress]);
-    }
+    switch (method) {
+      case "eth_requestAccounts":
+      case "eth_accounts":
+        return Promise.resolve([this.selectedAddress]);
 
-    return Promise.reject(new Error("Method not implemented"));
+      case "eth_chainId":
+        return Promise.resolve(this.chainId);
+
+      case "wallet_switchEthereumChain":
+        if (params && params[0] && params[0].chainId) {
+          this.chainId = params[0].chainId;
+          window.dispatchEvent(
+            new CustomEvent("chainChanged", { detail: this.chainId })
+          );
+          return Promise.resolve(null);
+        } else {
+          return Promise.reject(
+            new Error("Invalid params for wallet_switchEthereumChain")
+          );
+        }
+
+      case "eth_sendTransaction":
+        const txHash =
+          "0x" + crypto.randomUUID().replace(/-/g, "").padEnd(64, "0");
+        return Promise.resolve(txHash);
+
+      default:
+        return Promise.reject(new Error("Method not implemented"));
+    }
   }
 }
 
