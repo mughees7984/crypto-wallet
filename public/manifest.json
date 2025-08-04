@@ -3,11 +3,13 @@
   "version": "1.0",
   "manifest_version": 3,
   "action": {
-    "default_popup": "index.html"
+    "default_popup": "popup.html",
+    "default_title": "Connect Wallet"
   },
   "permissions": ["scripting", "storage"],
   "background": {
-    "service_worker": "assets/background.js"
+    "service_worker": "assets/background.js",
+    "type": "module"
   },
   "content_scripts": [
     {
@@ -16,9 +18,13 @@
       "run_at": "document_start"
     }
   ],
+
   "web_accessible_resources": [
     {
-      "resources": ["assets/injectedProvider.js"],
+      "resources": [
+        "connect.html",
+        "assets/injectedProvider.js" 
+      ],
       "matches": ["<all_urls>"]
     }
   ]

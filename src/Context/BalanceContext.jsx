@@ -85,10 +85,8 @@ import { ethers } from "ethers";
 import { useNetwork } from "./NetworkContext";
 import { useWallet } from "./WalletContext";
 
-// 🔷 Context creation
-export const BalanceContext = createContext();
+const BalanceContext = createContext();
 
-// 🔷 Provider component
 export const BalanceProvider = ({ children }) => {
   const { selectedNetwork } = useNetwork();
   const { selectedWallet } = useWallet();
@@ -98,53 +96,40 @@ export const BalanceProvider = ({ children }) => {
   const [lastUpdated, setLastUpdated] = useState(null);
   const [loading, setLoading] = useState(false);
 
-  // ✅ Memoized balance fetch function (supports native only for now)
   const fetchBalance = useCallback(async () => {
     if (!selectedWallet?.address || !selectedNetwork?.rpcUrl) return;
 
     try {
       setLoading(true);
+      const provider = new ethers.providers.JsonRpcProvider(
+        selectedNetwork.rpcUrl
+      );
+      const rawBalance = await provider.getBalance(selectedWallet.address);
+      const eth = parseFloat(ethers.utils.formatEther(rawBalance));
+      setBalance(eth.toFixed(4));
 
-      if (selectedNetwork.type === "evm") {
-        const provider = new ethers.providers.JsonRpcProvider(
-          selectedNetwork.rpcUrl
-        );
-        const rawBalance = await provider.getBalance(selectedWallet.address);
-        const eth = parseFloat(ethers.utils.formatEther(rawBalance));
-        setBalance(eth.toFixed(4));
-
-        // Replace this with live price in future
-        const dummyPrice = 1800;
-        setUsdValue(`$${(eth * dummyPrice).toFixed(2)}`);
-      }
-
+      // Dummy USD price
+      const dummyPrice = 1800;
+      setUsdValue(`$${(eth * dummyPrice).toFixed(2)}`);
       setLastUpdated(new Date().toLocaleTimeString());
     } catch (error) {
       console.error("❌ Error fetching balance:", error);
     } finally {
       setLoading(false);
     }
-  }, [selectedWallet, selectedNetwork]);
+  }, [selectedWallet?.address, selectedNetwork?.rpcUrl]);
 
-  // 🔄 Auto-fetch on wallet or network change
   useEffect(() => {
     fetchBalance();
   }, [fetchBalance]);
 
   return (
     <BalanceContext.Provider
-      value={{
-        balance,
-        usdValue,
-        lastUpdated,
-        loading,
-        fetchBalance,
-      }}
+      value={{ balance, usdValue, lastUpdated, loading, fetchBalance }}
     >
       {children}
     </BalanceContext.Provider>
   );
 };
 
-// 🔷 Hook for easier access
 export const useBalance = () => useContext(BalanceContext);

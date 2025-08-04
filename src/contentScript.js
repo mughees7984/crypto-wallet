@@ -1,80 +1,94 @@
-
-
-// // src/content-script.js
-
 // // Inject the provider script into the page
 // const script = document.createElement("script");
-// script.src = chrome.runtime.getURL("injectedProvider.js");
+// script.src = chrome.runtime.getURL("assets/injectedProvider.js");
 // script.onload = function () {
 //   this.remove();
 // };
 // (document.head || document.documentElement).appendChild(script);
 
-// // Listen for messages from the page
-// window.addEventListener("message", async (event) => {
-//   if (
-//     event.source !== window ||
-//     !event.data.type ||
-//     event.data.type !== "ETHEREUM_REQUEST"
-//   ) {
-//     return;
+// // Relay messages from page → extension
+// window.addEventListener("message", (event) => {
+//   if (event.source !== window) return;
+//   const { type, payload } = event.data;
+
+//   if (type === "GET_EXTENSION_STORAGE") {
+//     const selectedAddress =
+//       localStorage.getItem("selectedAddress") ||
+//       "0x0000000000000000000000000000000000000000";
+//     const chainId = localStorage.getItem("chainId") || "0xaa36a7";
+
+//     window.postMessage(
+//       {
+//         type: "EXTENSION_STORAGE_RESULT",
+//         payload: {
+//           selectedAddress,
+//           chainId,
+//         },
+//       },
+//       "*"
+//     );
 //   }
 
-//   const { id, method, params } = event.data;
+//   if (type === "SAVE_EXTENSION_STORAGE") {
+//     const { selectedAddress, chainId } = payload;
+//     if (selectedAddress)
+//       localStorage.setItem("selectedAddress", selectedAddress);
+//     if (chainId) localStorage.setItem("chainId", chainId);
+//   }
 
-//   chrome.runtime.sendMessage({ method, params }, (response) => {
-//     const message = {
-//       type: "ETHEREUM_RESPONSE",
-//       id,
-//     };
+//   if (type === "TRIGGER_EXTENSION_POPUP") {
+//     chrome.runtime.sendMessage({
+//       type: "OPEN_POPUP",
+//       requestId: payload?.requestId,
+//     });
+//   }
 
-//     if (chrome.runtime.lastError) {
-//       message.error = chrome.runtime.lastError.message;
-//     } else if (response?.error) {
-//       message.error = response.error;
-//     } else {
-//       message.result = response.result;
-//     }
+//   if (type === "SEND_TX_REQUEST" || type === "SIGN_MESSAGE_REQUEST") {
+//     chrome.runtime.sendMessage({
+//       type,
+//       payload,
+//     });
+//   }
+// });
 
-//     window.postMessage(message, "*");
-//   });
+// // Relay responses from background → page
+// chrome.runtime.onMessage.addListener((msg) => {
+//   window.postMessage(msg, "*");
 // });
 
 
-// src/contentScript.js
-
-const script = document.createElement('script');
-script.src = chrome.runtime.getURL('assets/injectedProvider.js');
+// Inject the provider into the page
+const script = document.createElement("script");
+script.src = chrome.runtime.getURL("assets/injectedProvider.js");
 script.onload = function () {
   this.remove();
 };
 (document.head || document.documentElement).appendChild(script);
 
-// Listen to messages from page → relay to background
-window.addEventListener('message', async (event) => {
-  if (
-    event.source !== window ||
-    !event.data ||
-    event.data.target !== 'my-wallet-extension'
-  )
-    return;
+// Listen for provider requests from the page
+window.addEventListener("message", (event) => {
+  if (event.source !== window) return;
+  const { type, payload } = event.data;
 
-  chrome.runtime.sendMessage(
-    {
-      type: 'FROM_PAGE',
-      method: event.data.method,
-      params: event.data.params,
-    },
-    (response) => {
-      window.postMessage(
-        {
-          target: 'my-wallet-page',
-          method: event.data.method,
-          result: response?.result,
-          error: response?.error,
-        },
-        '*'
-      );
-    }
-  );
+  if (type === "ETHEREUM_PROVIDER_REQUEST") {
+    chrome.runtime.sendMessage(
+      {
+        type: "ETHEREUM_PROVIDER_REQUEST",
+        payload,
+      },
+      (response) => {
+        window.postMessage(
+          {
+            type: "ETHEREUM_PROVIDER_RESPONSE",
+            payload: {
+              requestId: payload.requestId,
+              result: response?.result,
+              error: response?.error,
+            },
+          },
+          "*"
+        );
+      }
+    );
+  }
 });

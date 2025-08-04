@@ -10,6 +10,8 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import { resolve } from 'path'
+import path from 'path';
+
 
 export default defineConfig({
   base: './', // <-- ✅ fix for Chrome extension file structure
@@ -17,7 +19,9 @@ export default defineConfig({
   build: {
     rollupOptions: {
       input: {
-        popup: resolve(__dirname, 'index.html'),
+        index: path.resolve(__dirname, 'index.html'),
+        popup: path.resolve(__dirname, 'src/main.jsx'),
+        connect: resolve(__dirname, 'public/connect.html'),
         background: resolve(__dirname, 'src/background.js'),
         contentScript: resolve(__dirname, 'src/contentScript.js'),
          injectedProvider: resolve(__dirname, 'src/injectedProvider.js'),

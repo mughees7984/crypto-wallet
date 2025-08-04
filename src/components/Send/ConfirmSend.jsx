@@ -1,41 +1,126 @@
-// import React, { useState } from "react";
-// import { ChevronLeft } from "lucide-react";
-// import { useNetwork } from "../../Context/NetworkContext";
-// import { ethers } from "ethers";
 
-// export default function ConfirmSend({ onBack, txData }) {
+
+
+// import React, { useState } from "react";
+// import { ChevronLeft, CheckCircle } from "lucide-react";
+// import { useNetwork } from "../../Context/NetworkContext";
+// import { useTransactions } from "../../Context/TransactionContext";
+// import { useBalance } from "../../Context/BalanceContext";
+
+// export default function ConfirmSend({ onBack, txData, onSuccess }) {
 //   const { selectedNetwork } = useNetwork();
+//   const { addTransaction } = useTransactions();
+//   const { fetchBalance } = useBalance();
+
 //   const [sending, setSending] = useState(false);
 //   const [message, setMessage] = useState(null);
+//   const [txHash, setTxHash] = useState(null);
+
+//   const getSelectedWallet = () => {
+//     if (typeof chrome !== "undefined" && chrome.storage?.local) {
+//       return new Promise((resolve) => {
+//         chrome.storage.local.get(["selectedWallet"], (result) => {
+//           resolve(result.selectedWallet);
+//         });
+//       });
+//     } else {
+//       return Promise.resolve(
+//         JSON.parse(localStorage.getItem("selectedWallet"))
+//       );
+//     }
+//   };
 
 //   const handleConfirm = async () => {
-//     try {
-//       setSending(true);
-//       setMessage(null);
+//     setSending(true);
+//     setMessage(null);
+//     setTxHash(null);
 
-//       const { to, amount } = txData;
-//       const wallet = JSON.parse(localStorage.getItem("wallet"));
-//       if (!wallet || !wallet.privateKey || !to || !amount) {
-//         throw new Error("Missing data to send transaction.");
+//     try {
+//       const selectedWallet = await getSelectedWallet();
+//       if (!selectedWallet?.address) {
+//         setMessage("❌ No selected wallet found.");
+//         setSending(false);
+//         return;
 //       }
 
-//       const provider = new ethers.providers.JsonRpcProvider(selectedNetwork.rpcUrl);
-//       const signer = new ethers.Wallet(wallet.privateKey, provider);
+//       const messagePayload = {
+//         type: "SEND_TRANSACTION",
+//         from: selectedWallet.address,
+//         to: txData.to,
+//         amount: txData.amount,
+//         rpcUrl: selectedNetwork.rpcUrl,
+//       };
 
-//       const tx = await signer.sendTransaction({
-//         to,
-//         value: ethers.utils.parseEther(amount),
-//       });
+//       const isExtension =
+//         typeof chrome !== "undefined" &&
+//         chrome.runtime?.sendMessage &&
+//         chrome.runtime?.id;
 
-//       await tx.wait();
-//       setMessage("✅ Transaction successful!");
+//       if (isExtension) {
+//         chrome.runtime.sendMessage(messagePayload, (response) => {
+//           if (chrome.runtime.lastError) {
+//             setMessage(`❌ ${chrome.runtime.lastError.message}`);
+//             setSending(false);
+//             return;
+//           }
+
+//           handleResponse(response, selectedWallet.address);
+//         });
+//       } else {
+//         // Simulate response for browser fallback/testing
+//         setTimeout(() => {
+//           const fakeResponse = { success: true, hash: "0xFAKE_HASH_123" };
+//           handleResponse(fakeResponse, selectedWallet.address);
+//         }, 1000);
+//       }
 //     } catch (err) {
 //       console.error("Send Error:", err);
 //       setMessage(`❌ ${err.message}`);
-//     } finally {
 //       setSending(false);
 //     }
 //   };
+
+//   const handleResponse = async (response, fromAddress) => {
+//     setSending(false);
+
+//     if (response?.success) {
+//       const txEntry = {
+//         from: fromAddress,
+//         to: txData.to,
+//         amount: txData.amount,
+//         symbol: selectedNetwork.symbol,
+//         network: selectedNetwork.name,
+//         date: new Date().toLocaleString(),
+//         status: "Confirmed",
+//         type: "Send",
+//         hash: response.hash || "",
+//       };
+
+//       const txHistory =
+//         JSON.parse(localStorage.getItem("transactions")) || [];
+//       txHistory.push(txEntry);
+//       localStorage.setItem("transactions", JSON.stringify(txHistory));
+//       addTransaction(txEntry);
+
+//       setTxHash(response.hash || "N/A");
+//       setMessage("✅ Transaction successful!");
+
+//       // ✅ Update balance on global context and main UI
+//       await fetchBalance();
+
+//       // Trigger UI update/callback
+//       if (typeof onSuccess === "function") {
+//         setTimeout(() => onSuccess(), 1000);
+//       }
+//     } else {
+//       setMessage(`❌ ${response?.error || "Transaction failed."}`);
+//     }
+//   };
+
+//   const [fromAddress] = useState(() => {
+//     const selected = JSON.parse(localStorage.getItem("selectedWallet"));
+//     return selected?.address || "N/A";
+//   });
 
 //   return (
 //     <div className="fixed inset-0 bg-gray-900 text-white z-50 max-w-md mx-auto flex flex-col min-h-screen">
@@ -47,13 +132,11 @@
 //         <h1 className="text-lg font-medium">Confirm</h1>
 //       </div>
 
-//       {/* Details */}
+//       {/* Body */}
 //       <div className="p-6 space-y-4 flex-1 overflow-y-auto">
 //         <div>
 //           <div className="text-sm text-gray-400">From</div>
-//           <div className="text-white font-medium">
-//             {JSON.parse(localStorage.getItem("wallet"))?.address}
-//           </div>
+//           <div className="text-white font-medium">{fromAddress}</div>
 //         </div>
 
 //         <div>
@@ -68,17 +151,36 @@
 
 //         <div>
 //           <div className="text-sm text-gray-400">Amount</div>
-//           <div className="text-white font-medium">{txData.amount} {selectedNetwork.symbol}</div>
+//           <div className="text-white font-medium">
+//             {txData.amount} {selectedNetwork.symbol}
+//           </div>
 //         </div>
 
-//         {message && (
-//           <div className={`text-sm mt-4 ${message.startsWith("✅") ? "text-green-400" : "text-red-400"}`}>
+//         {/* ✅ Success Message with Tx Hash */}
+//         {txHash && (
+//           <div className="mt-4 p-3 bg-green-600/10 text-green-400 rounded-lg border border-green-700 space-y-1">
+//             <div className="flex items-center gap-2">
+//               <CheckCircle size={18} />
+//               <span>Transaction successful!</span>
+//             </div>
+//             <div className="text-xs break-all text-green-300">
+//               Tx Hash: {txHash}
+//             </div>
+//           </div>
+//         )}
+
+//         {/* ✅ Error/Status Message */}
+//         {message && !txHash && (
+//           <div
+//             className={`text-sm mt-4 ${message.startsWith("✅") ? "text-green-400" : "text-red-400"
+//               }`}
+//           >
 //             {message}
 //           </div>
 //         )}
 //       </div>
 
-//       {/* Buttons */}
+//       {/* Footer */}
 //       <div className="p-4 flex space-x-3 bg-gray-900">
 //         <button
 //           onClick={onBack}
@@ -99,81 +201,126 @@
 //   );
 // }
 
-import React, { useState } from "react";
-import { ChevronLeft } from "lucide-react";
+
+import React, { useState, useEffect } from "react";
+import { ChevronLeft, CheckCircle } from "lucide-react";
 import { useNetwork } from "../../Context/NetworkContext";
 import { useTransactions } from "../../Context/TransactionContext";
-import { ethers } from "ethers";
-import { useNavigate } from "react-router-dom";
+import { useBalance } from "../../Context/BalanceContext";
 
-export default function ConfirmSend({ onBack, txData }) {
+export default function ConfirmSend({ onBack, txData, onSuccess }) {
   const { selectedNetwork } = useNetwork();
+  const { addTransaction } = useTransactions();
+  const { fetchBalance } = useBalance();
+
   const [sending, setSending] = useState(false);
   const [message, setMessage] = useState(null);
+  const [txHash, setTxHash] = useState(null);
+  const [fromAddress, setFromAddress] = useState("N/A");
 
-  const navigate = useNavigate();
-  const { addTransaction } = useTransactions();
+  // 🔄 Get selected wallet (from chrome.storage or localStorage)
+  const getSelectedWallet = () => {
+    return new Promise((resolve) => {
+      if (typeof chrome !== "undefined" && chrome.storage?.local) {
+        chrome.storage.local.get(["selectedWallet"], (result) => {
+          resolve(result.selectedWallet || null);
+        });
+      } else {
+        const local = JSON.parse(localStorage.getItem("selectedWallet"));
+        resolve(local || null);
+      }
+    });
+  };
+
+  // 🧠 Load wallet address on mount
+  useEffect(() => {
+    (async () => {
+      const selected = await getSelectedWallet();
+      if (selected?.address) setFromAddress(selected.address);
+    })();
+  }, []);
 
   const handleConfirm = async () => {
-    try {
-      setSending(true);
-      setMessage(null);
+    setSending(true);
+    setMessage(null);
+    setTxHash(null);
 
-      const { to, amount } = txData;
-      const wallet = JSON.parse(localStorage.getItem("wallet"));
-      if (!wallet || !wallet.privateKey || !to || !amount) {
-        throw new Error("Missing data to send transaction.");
+    try {
+      const selectedWallet = await getSelectedWallet();
+      if (!selectedWallet?.address) {
+        setMessage("❌ No selected wallet found.");
+        setSending(false);
+        return;
       }
 
-      const provider = new ethers.providers.JsonRpcProvider(
-        selectedNetwork.rpcUrl
-      );
-      const signer = new ethers.Wallet(wallet.privateKey, provider);
+      const payload = {
+        type: "SEND_TRANSACTION",
+        from: selectedWallet.address,
+        to: txData.to,
+        amount: txData.amount,
+        rpcUrl: selectedNetwork.rpcUrl,
+      };
 
-      const tx = await signer.sendTransaction({
-        to,
-        value: ethers.utils.parseEther(amount),
-      });
+      const isExtension =
+        typeof chrome !== "undefined" &&
+        chrome.runtime?.sendMessage &&
+        chrome.runtime?.id;
 
-      await tx.wait();
-
-      // ✅ Save to localStorage as transaction history
-      const txHistory = JSON.parse(localStorage.getItem("transactions")) || [];
-      txHistory.push({
-        from: wallet.address,
-        to: to,
-        amount: amount,
-        symbol: selectedNetwork.symbol,
-        network: selectedNetwork.name,
-        date: new Date().toLocaleString(),
-        status: "Confirmed",
-        type: "Send",
-      });
-      // localStorage.setItem("transactions", JSON.stringify(txHistory));
-
-      addTransaction({
-        from: wallet.address,
-        to,
-        amount,
-        symbol: selectedNetwork.symbol,
-        network: selectedNetwork.name,
-        date: new Date().toLocaleString(),
-        status: "Confirmed",
-        type: "Send",
-      });
-
-      setMessage("✅ Transaction successful!");
-
-      // Navigate after short delay
-      setTimeout(() => {
-        navigate("/wallet");
-      }, 1500);
-      
+      if (isExtension) {
+        chrome.runtime.sendMessage(payload, (response) => {
+          if (chrome.runtime.lastError) {
+            setMessage(`❌ ${chrome.runtime.lastError.message}`);
+            setSending(false);
+            return;
+          }
+          handleResponse(response, selectedWallet.address);
+        });
+      } else {
+        // Web fallback simulation
+        setTimeout(() => {
+          const fakeResponse = { success: true, hash: "0xFAKE_HASH_123456" };
+          handleResponse(fakeResponse, selectedWallet.address);
+        }, 1000);
+      }
     } catch (err) {
       console.error("Send Error:", err);
       setMessage(`❌ ${err.message}`);
-    } finally {
       setSending(false);
+    }
+  };
+
+  const handleResponse = async (response, fromAddress) => {
+    setSending(false);
+
+    if (response?.success) {
+      const txEntry = {
+        from: fromAddress,
+        to: txData.to,
+        amount: txData.amount,
+        symbol: selectedNetwork.symbol,
+        network: selectedNetwork.name,
+        date: new Date().toLocaleString(),
+        status: "Confirmed",
+        type: "Send",
+        hash: response.hash || "",
+      };
+
+      // Save to localStorage & context
+      const txHistory = JSON.parse(localStorage.getItem("transactions")) || [];
+      txHistory.push(txEntry);
+      localStorage.setItem("transactions", JSON.stringify(txHistory));
+      addTransaction(txEntry);
+
+      setTxHash(response.hash || "N/A");
+      setMessage("✅ Transaction successful!");
+
+      await fetchBalance();
+
+      if (typeof onSuccess === "function") {
+        setTimeout(() => onSuccess(), 1000);
+      }
+    } else {
+      setMessage(`❌ ${response?.error || "Transaction failed."}`);
     }
   };
 
@@ -187,13 +334,11 @@ export default function ConfirmSend({ onBack, txData }) {
         <h1 className="text-lg font-medium">Confirm</h1>
       </div>
 
-      {/* Details */}
+      {/* Body */}
       <div className="p-6 space-y-4 flex-1 overflow-y-auto">
         <div>
           <div className="text-sm text-gray-400">From</div>
-          <div className="text-white font-medium">
-            {JSON.parse(localStorage.getItem("wallet"))?.address}
-          </div>
+          <div className="text-white font-medium">{fromAddress}</div>
         </div>
 
         <div>
@@ -213,18 +358,33 @@ export default function ConfirmSend({ onBack, txData }) {
           </div>
         </div>
 
-        {message && (
+        {/* ✅ Success Message */}
+        {txHash && (
+          <div className="mt-4 p-3 bg-green-600/10 text-green-400 rounded-lg border border-green-700 space-y-1">
+            <div className="flex items-center gap-2">
+              <CheckCircle size={18} />
+              <span>Transaction successful!</span>
+            </div>
+            <div className="text-xs break-all text-green-300">
+              Tx Hash: {txHash}
+            </div>
+          </div>
+        )}
+
+        {/* ❌ Error or Info Message */}
+        {message && !txHash && (
           <div
-            className={`text-sm mt-4 ${
-              message.startsWith("✅") ? "text-green-400" : "text-red-400"
-            }`}
+            className={`text-sm mt-4 ${message.startsWith("✅")
+              ? "text-green-400"
+              : "text-red-400"
+              }`}
           >
             {message}
           </div>
         )}
       </div>
 
-      {/* Footer Buttons */}
+      {/* Footer */}
       <div className="p-4 flex space-x-3 bg-gray-900">
         <button
           onClick={onBack}
