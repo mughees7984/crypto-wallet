@@ -57,38 +57,29 @@
 // });
 
 
-// Inject the provider into the page
+// Inject injectedProvider.js into the webpage
 const script = document.createElement("script");
 script.src = chrome.runtime.getURL("assets/injectedProvider.js");
-script.onload = function () {
-  this.remove();
-};
+script.onload = () => script.remove();
 (document.head || document.documentElement).appendChild(script);
 
-// Listen for provider requests from the page
+// Bridge messages between webpage and background
 window.addEventListener("message", (event) => {
-  if (event.source !== window) return;
-  const { type, payload } = event.data;
+  if (event.source !== window || !event.data?.type?.startsWith("ETHEREUM_PROVIDER_")) return;
 
-  if (type === "ETHEREUM_PROVIDER_REQUEST") {
-    chrome.runtime.sendMessage(
+  // Forward to background
+  chrome.runtime.sendMessage(event.data, (response) => {
+    // Send response back to webpage
+    window.postMessage(
       {
-        type: "ETHEREUM_PROVIDER_REQUEST",
-        payload,
+        type: "ETHEREUM_PROVIDER_RESPONSE",
+        requestId: event.data.requestId,
+        result: response?.result,
+        error: response?.error,
       },
-      (response) => {
-        window.postMessage(
-          {
-            type: "ETHEREUM_PROVIDER_RESPONSE",
-            payload: {
-              requestId: payload.requestId,
-              result: response?.result,
-              error: response?.error,
-            },
-          },
-          "*"
-        );
-      }
+      "*"
     );
-  }
+  });
 });
+
+console.log("✅ contentScript.js loaded");

@@ -155,36 +155,32 @@
 // window.dispatchEvent(new Event("ethereum#initialized"));
 
 
-console.log("Injected provider loaded");
-
-const myWalletProvider = {
-  isMyWallet: true,
-  isMetaMask: false,
-
+window.ethereum = {
   request: ({ method, params }) => {
-    const requestId = Date.now();
-
     return new Promise((resolve, reject) => {
+      const requestId = Date.now();
+
+      // Listen for response
       const handleResponse = (event) => {
         if (event.source !== window) return;
-        const msg = event.data;
+        const message = event.data;
 
-        if (
-          msg.type === "ETHEREUM_PROVIDER_RESPONSE" &&
-          msg.payload?.requestId === requestId
-        ) {
+        if (message.type === "ETHEREUM_PROVIDER_RESPONSE" && message.requestId === requestId) {
           window.removeEventListener("message", handleResponse);
-          if (msg.payload.error) reject(new Error(msg.payload.error));
-          else resolve(msg.payload.result);
+          if (message.error) reject(message.error);
+          else resolve(message.result);
         }
       };
 
       window.addEventListener("message", handleResponse);
 
+      // Send request
       window.postMessage(
         {
           type: "ETHEREUM_PROVIDER_REQUEST",
-          payload: { method, params, requestId },
+          method,
+          params,
+          requestId,
         },
         "*"
       );
@@ -192,11 +188,4 @@ const myWalletProvider = {
   },
 };
 
-// Inject only if no Ethereum provider or not MetaMask
-if (!window.ethereum || !window.ethereum.isMetaMask) {
-  window.ethereum = myWalletProvider;
-  console.log("Custom wallet provider injected as window.ethereum");
-}
-
-// Optional: Also expose as myEthereum
-window.myEthereum = myWalletProvider;
+console.log("✅ injectedProvider.js loaded: window.ethereum.request() ready");

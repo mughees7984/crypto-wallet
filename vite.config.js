@@ -20,7 +20,7 @@ export default defineConfig({
     rollupOptions: {
       input: {
         index: path.resolve(__dirname, 'index.html'),
-        popup: path.resolve(__dirname, 'src/main.jsx'),
+        popup: path.resolve(__dirname, 'popup.html'),
         connect: resolve(__dirname, 'public/connect.html'),
         background: resolve(__dirname, 'src/background.js'),
         contentScript: resolve(__dirname, 'src/contentScript.js'),

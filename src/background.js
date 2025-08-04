@@ -262,46 +262,19 @@
 // }
 
 
-// Track pending connect request
-let pendingRequest = null;
-
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+  console.log("📩 background received:", message);
+
   if (message.type === "ETHEREUM_PROVIDER_REQUEST") {
-    const { method, params, requestId } = message.payload;
-
-    if (method === "eth_requestAccounts") {
-      // Store the callback so we can resolve later from ConnectPage
-      pendingRequest = {
-        requestId,
-        sendResponse,
-        tabId: sender.tab?.id,
-      };
-
-      // Open the connect popup window
-      chrome.windows.create({
-        url: chrome.runtime.getURL("connect.html"),
-        type: "popup",
-        width: 400,
-        height: 600,
-      });
-
-      // Important: keep message channel open
-      return true;
+    if (message.method === "eth_requestAccounts") {
+      // Simulate returning one wallet address
+      sendResponse({ result: ["0x1234567890abcdef1234567890abcdef12345678"] });
+    } else {
+      sendResponse({ error: "Method not supported: " + message.method });
     }
-
-    // Handle other methods (e.g. eth_chainId, personal_sign, etc.) here if needed
-    sendResponse({ result: null });
   }
 
-  // Handle response from connect page
-  if (message.type === "WALLET_CONNECTED" && pendingRequest) {
-    const { address } = message.payload;
-
-    // Send address back to content script
-    pendingRequest.sendResponse({
-      result: [address],
-    });
-
-    pendingRequest = null;
-  }
+  return true; // Important if sendResponse is async
 });
+
+console.log("✅ background.js loaded");
